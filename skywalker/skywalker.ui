@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1045</width>
-    <height>1201</height>
+    <width>1103</width>
+    <height>987</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,17 +19,20 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>1021</width>
-      <height>1145</height>
+      <width>1077</width>
+      <height>930</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
+    <layout class="QVBoxLayout" name="main_layout">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="upper_layout">
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_7">
+        <layout class="QVBoxLayout" name="image_layout">
          <item>
-          <widget class="QLabel" name="label_3">
+          <widget class="QLabel" name="image_title">
            <property name="font">
             <font>
              <family>Monospace</family>
@@ -37,7 +40,7 @@
             </font>
            </property>
            <property name="text">
-            <string>HX2 YAG</string>
+            <string>Current Imager</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
@@ -45,8 +48,20 @@
           </widget>
          </item>
          <item>
-          <widget class="PyDMImageView" name="PyDMImageView">
+          <widget class="PyDMImageView" name="image">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>2</horstretch>
+             <verstretch>3</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
+            <size>
+             <width>480</width>
+             <height>640</height>
+            </size>
+           </property>
+           <property name="maximumSize">
             <size>
              <width>480</width>
              <height>640</height>
@@ -63,26 +78,13 @@
         </layout>
        </item>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <layout class="QVBoxLayout" name="control_layout">
          <item>
-          <spacer name="verticalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <layout class="QHBoxLayout" name="upper_control_layout">
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_4">
+            <layout class="QVBoxLayout" name="alignment_layout">
              <item>
-              <widget class="QLineEdit" name="lineEdit">
+              <widget class="QLabel" name="control_title">
                <property name="font">
                 <font>
                  <family>Monospace</family>
@@ -98,9 +100,9 @@
               </widget>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <layout class="QHBoxLayout" name="procedure_layout">
                <item>
-                <widget class="QLabel" name="label_2">
+                <widget class="QLabel" name="procedure_label">
                  <property name="font">
                   <font>
                    <family>Monospace</family>
@@ -113,7 +115,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QComboBox" name="comboBox">
+                <widget class="QComboBox" name="procedure_combo">
                  <property name="minimumSize">
                   <size>
                    <width>150</width>
@@ -175,7 +177,7 @@
               </layout>
              </item>
              <item>
-              <widget class="QLabel" name="label">
+              <widget class="QLabel" name="status_label">
                <property name="font">
                 <font>
                  <family>Monospace</family>
@@ -188,20 +190,7 @@
               </widget>
              </item>
              <item>
-              <spacer name="verticalSpacer_6">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="start_button">
                <property name="font">
                 <font>
                  <family>Monospace</family>
@@ -214,20 +203,7 @@
               </widget>
              </item>
              <item>
-              <spacer name="verticalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButton_2">
+              <widget class="QPushButton" name="pause_button">
                <property name="font">
                 <font>
                  <family>Monospace</family>
@@ -240,20 +216,7 @@
               </widget>
              </item>
              <item>
-              <spacer name="verticalSpacer_5">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButton_3">
+              <widget class="QPushButton" name="abort_button">
                <property name="font">
                 <font>
                  <family>Monospace</family>
@@ -268,9 +231,9 @@
             </layout>
            </item>
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_5">
+            <layout class="QVBoxLayout" name="goals_layout">
              <item>
-              <widget class="QLineEdit" name="lineEdit_2">
+              <widget class="QLabel" name="goals_label">
                <property name="font">
                 <font>
                  <family>Monospace</family>
@@ -286,17 +249,748 @@
               </widget>
              </item>
              <item>
-              <spacer name="verticalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
+              <layout class="QGridLayout" name="pixels_layout">
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="goal_value_1">
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLineEdit" name="goal_value_3">
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLineEdit" name="goal_value_2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="goal_name_1">
+                 <property name="minimumSize">
+                  <size>
+                   <width>90</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 1</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="goal_name_2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>90</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 2</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="goal_name_3">
+                 <property name="minimumSize">
+                  <size>
+                   <width>90</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 3</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QLabel" name="slit_check_label">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
+               <property name="text">
+                <string>Slit Checker</string>
                </property>
-              </spacer>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="slit_check_1">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>14</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Imager 1</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="slit_check_2">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>14</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Imager 2</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="slit_check_3">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>14</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Imager 3</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="slit_fill_check">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>14</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Auto Fill Goals</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="slit_run_button">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Run Slits</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QLabel" name="readback_title">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Monospace</family>
+             <pointsize>16</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>System Readbacks</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="readbacks_layout">
+           <item>
+            <layout class="QVBoxLayout" name="imager_readback_layout">
+             <item>
+              <widget class="QLabel" name="readback_imager_title">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Current Imager</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QGridLayout" name="centroid_layout">
+               <item row="1" column="0">
+                <widget class="QLabel" name="beam_x_label">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Beam X</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="beam_y_label">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Beam Y</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QLabel" name="beam_y_delta">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>TextLabel</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QLabel" name="beam_x_delta">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>TextLabel</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLabel" name="beam_position_label">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Position</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QLabel" name="beam_delta_label">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Delta</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLabel" name="beam_x_value">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>TextLabel</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLabel" name="beam_y_value">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>TextLabel</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QLabel" name="readback_slits_title">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Slits</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QGridLayout" name="slit_width_layout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="slit_x_label">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Width X</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="slit_y_label">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Width Y</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="PyDMLabel" name="slit_x_width">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="PyDMLabel" name="slit_y_width">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="system_layout">
+             <item>
+              <widget class="QLabel" name="mirrors_title">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Mirrors</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QGridLayout" name="mirrors_layout">
+               <item row="1" column="0">
+                <widget class="QLabel" name="goal_name_5">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 2</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="PyDMLabel" name="mirror_3_readback">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="PyDMLabel" name="mirror_1_readback">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="goal_name_4">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 1</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="goal_name_6">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 3</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="PyDMLineEdit" name="mirror_1_setpos">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="PyDMLineEdit" name="mirror_2_setpos">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="PyDMLabel" name="mirror_2_readback">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="3">
+                <widget class="PyDMLineEdit" name="mirror_3_setpos">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_1_circle">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_2_circle">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_3_circle">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QLabel" name="mps_summary_label">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>MPS Summary</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="PyDMLabel" name="mps_summary">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>14</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string/>
+               </property>
+               <property name="whatsThis">
+                <string/>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="current_fault_label">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Current Fault</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="PyDMLabel" name="current_fault">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>14</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string/>
+               </property>
+               <property name="whatsThis">
+                <string/>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
              </item>
             </layout>
            </item>
@@ -307,7 +1001,7 @@
       </layout>
      </item>
      <item>
-      <widget class="QPlainTextEdit" name="plainTextEdit">
+      <widget class="QPlainTextEdit" name="log_text">
        <property name="minimumSize">
         <size>
          <width>0</width>
@@ -345,7 +1039,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1045</width>
+     <width>1103</width>
      <height>20</height>
     </rect>
    </property>
@@ -359,14 +1053,14 @@
      <string>Settings</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuExpert">
+   <widget class="QMenu" name="menuRelated">
     <property name="title">
-     <string>Expert</string>
+     <string>Related Screens</string>
     </property>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSettings"/>
-   <addaction name="menuExpert"/>
+   <addaction name="menuRelated"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
@@ -375,6 +1069,21 @@
    <class>PyDMImageView</class>
    <extends>QWidget</extends>
    <header>pydm.widgets.image</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMLabel</class>
+   <extends>QLabel</extends>
+   <header>pydm.widgets.label</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>pydm.widgets.line_edit</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMDrawingCircle</class>
+   <extends>QWidget</extends>
+   <header>pydm.widgets.drawing</header>
   </customwidget>
  </customwidgets>
  <resources/>
