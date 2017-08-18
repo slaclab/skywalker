@@ -41,8 +41,9 @@ class SkywalkerGui(Display):
 
         # Populate image title combo box
         self.ui.image_title_combo.clear()
-        all_imager_names = [entry['imager'].name for entry in system.values()]
-        for imager_name in all_imager_names:
+        self.all_imager_names = [entry['imager'].name for
+                                 entry in system.values()]
+        for imager_name in self.all_imager_names:
             self.ui.image_title_combo.addItem(imager_name)
 
         # Populate procedures combo box
@@ -55,18 +56,14 @@ class SkywalkerGui(Display):
 
         # Initialize the screen with the first camera in the first procedure
         system_key = alignments[self.procedure][0][0]
-        system_entry = system[system_key]
-        imager_name = system_entry['imager'].name
-        self.select_imager(imager_name)
-        index = all_imager_names.index(imager_name)
-        self.ui.image_title_combo.setCurrentIndex(index)
+        self.select_imager(system_key)
 
         # When we change the procedure, reinitialize the control portions
-        procedure_changed = self.ui.procedure_combo.currentIndexChanged[str]
+        procedure_changed = self.ui.procedure_combo.activated[str]
         procedure_changed.connect(self.select_procedure)
 
         # When we change the active imager, swap just the imager
-        imager_changed = self.ui.image_title_combo.currentIndexChanged[str]
+        imager_changed = self.ui.image_title_combo.activated[str]
         imager_changed.connect(self.select_imager)
 
     @property
@@ -139,8 +136,12 @@ class SkywalkerGui(Display):
                 self.goal_cache[str(glabel.text())] = float(old_goal)
             gedit.clear()
 
-            # If no imager, we hide the unneeded widgets
+            # If no imager, we hide/dc the unneeded widgets
             if img is None:
+                mcircle.channel = ''
+                mrbv.channel = ''
+                mset.channel = ''
+
                 glabel.hide()
                 gedit.hide()
                 scheck.hide()
@@ -161,11 +162,17 @@ class SkywalkerGui(Display):
                     scheck.setText(slit.name)
                     scheck.show()
 
-                # Set up input validation
+                # Set up input validation and check cache for value
                 # TODO different range for different imager
                 gedit.setValidator(QDoubleValidator(0., 480., 3))
+                cached_goal = self.goal_cache.get(img.name)
+                if cached_goal is not None:
+                    gedit.setText(str(cached_goal))
 
                 # Connect mirror PVs
+                mcircle.channel = 'ca://' + mirr.pitch.motor_done_move.pvname
+                mrbv.channel = 'ca://' + mirr.pitch.user_readback.pvname
+                mset.channel = 'ca://' + mirr.pitch.user_setpoint.pvname
 
                 # Make sure things are visible
                 glabel.show()
@@ -183,8 +190,17 @@ class SkywalkerGui(Display):
         return widgets
 
     @pyqtSlot(str)
-    def select_imager(self, mirror):
-        pass
+    def select_imager(self, system_key):
+        """
+        Change on-screen information and displayed image to correspond to the
+        selected mirror-imager-slit trio.
+        """
+        system_entry = self.system[system_key]
+        imager = system_entry['imager']
+
+        # Make sure the combobox matches the image
+        index = self.all_imager_names.index(imager.name)
+        self.ui.image_title_combo.setCurrentIndex(index)
 
     def ui_filename(self):
         return 'skywalker_gui.ui'
