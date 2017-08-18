@@ -20,7 +20,7 @@
       <x>10</x>
       <y>10</y>
       <width>1077</width>
-      <height>930</height>
+      <height>1107</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="main_layout">
@@ -32,20 +32,25 @@
        <item>
         <layout class="QVBoxLayout" name="image_layout">
          <item>
-          <widget class="QLabel" name="image_title">
-           <property name="font">
-            <font>
-             <family>Monospace</family>
-             <pointsize>16</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Current Imager</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QComboBox" name="image_title_combo">
+             <property name="maximumSize">
+              <size>
+               <width>200</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Monospace</family>
+               <pointsize>16</pointsize>
+               <stylestrategy>PreferDefault</stylestrategy>
+              </font>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="PyDMImageView" name="image">
@@ -135,43 +140,8 @@
                   <bool>false</bool>
                  </property>
                  <property name="currentIndex">
-                  <number>0</number>
+                  <number>-1</number>
                  </property>
-                 <item>
-                  <property name="text">
-                   <string>HOMS</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>XCS</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>MFX</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>MEC</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>HOMS + XCS</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>HOMS + MFX</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>HOMS + MEC</string>
-                  </property>
-                 </item>
                 </widget>
                </item>
               </layout>
@@ -337,6 +307,35 @@
                  </property>
                 </widget>
                </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="goal_name_4">
+                 <property name="minimumSize">
+                  <size>
+                   <width>90</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 4</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QLineEdit" name="goal_value_4">
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
              <item>
@@ -356,46 +355,66 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="slit_check_1">
-               <property name="font">
-                <font>
-                 <family>Monospace</family>
-                 <pointsize>14</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>Imager 1</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="slit_check_2">
-               <property name="font">
-                <font>
-                 <family>Monospace</family>
-                 <pointsize>14</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>Imager 2</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="slit_check_3">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Monospace</family>
-                 <pointsize>14</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>Imager 3</string>
-               </property>
-              </widget>
+              <layout class="QGridLayout" name="gridLayout">
+               <item row="1" column="0">
+                <widget class="QCheckBox" name="slit_check_2">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 2</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QCheckBox" name="slit_check_1">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 1</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QCheckBox" name="slit_check_3">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 3</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QCheckBox" name="slit_check_4">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Imager 4</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
              <item>
               <widget class="QCheckBox" name="slit_fill_check">
@@ -407,6 +426,9 @@
                </property>
                <property name="text">
                 <string>Auto Fill Goals</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -608,6 +630,306 @@
               </layout>
              </item>
              <item>
+              <widget class="QLabel" name="mirrors_title">
+               <property name="font">
+                <font>
+                 <family>Monospace</family>
+                 <pointsize>16</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Mirrors</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QGridLayout" name="mirrors_layout">
+               <item row="2" column="3">
+                <widget class="PyDMLineEdit" name="mirror_setpos_3">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="mirror_name_2">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 2</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="PyDMLabel" name="mirror_readback_3">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="PyDMLabel" name="mirror_readback_1">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="mirror_name_1">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 1</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="mirror_name_3">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 3</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="PyDMLabel" name="mirror_readback_2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="PyDMLineEdit" name="mirror_setpos_2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="PyDMLineEdit" name="mirror_setpos_1">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_circle_1">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_circle_2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_circle_3">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="mirror_name_4">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                   <pointsize>14</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Mirror 4</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="PyDMDrawingCircle" name="mirror_circle_4">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="PyDMLabel" name="mirror_readback_4">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="3">
+                <widget class="PyDMLineEdit" name="mirror_setpos_4">
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                 <property name="whatsThis">
+                  <string>
+    Writeable text field to send and display channel values
+    </string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="system_layout">
+             <item>
               <widget class="QLabel" name="readback_slits_title">
                <property name="font">
                 <font>
@@ -686,237 +1008,6 @@
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QVBoxLayout" name="system_layout">
-             <item>
-              <widget class="QLabel" name="mirrors_title">
-               <property name="font">
-                <font>
-                 <family>Monospace</family>
-                 <pointsize>16</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>Mirrors</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <layout class="QGridLayout" name="mirrors_layout">
-               <item row="1" column="0">
-                <widget class="QLabel" name="goal_name_5">
-                 <property name="font">
-                  <font>
-                   <family>Monospace</family>
-                   <pointsize>14</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>Mirror 2</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="2">
-                <widget class="PyDMLabel" name="mirror_3_readback">
-                 <property name="minimumSize">
-                  <size>
-                   <width>40</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
-                <widget class="PyDMLabel" name="mirror_1_readback">
-                 <property name="minimumSize">
-                  <size>
-                   <width>40</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="0">
-                <widget class="QLabel" name="goal_name_4">
-                 <property name="font">
-                  <font>
-                   <family>Monospace</family>
-                   <pointsize>14</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>Mirror 1</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="0">
-                <widget class="QLabel" name="goal_name_6">
-                 <property name="font">
-                  <font>
-                   <family>Monospace</family>
-                   <pointsize>14</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>Mirror 3</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="3">
-                <widget class="PyDMLineEdit" name="mirror_1_setpos">
-                 <property name="minimumSize">
-                  <size>
-                   <width>40</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string>
-    Writeable text field to send and display channel values
-    </string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="3">
-                <widget class="PyDMLineEdit" name="mirror_2_setpos">
-                 <property name="minimumSize">
-                  <size>
-                   <width>40</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string>
-    Writeable text field to send and display channel values
-    </string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="2">
-                <widget class="PyDMLabel" name="mirror_2_readback">
-                 <property name="minimumSize">
-                  <size>
-                   <width>40</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="3">
-                <widget class="PyDMLineEdit" name="mirror_3_setpos">
-                 <property name="minimumSize">
-                  <size>
-                   <width>40</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string>
-    Writeable text field to send and display channel values
-    </string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="PyDMDrawingCircle" name="mirror_1_circle">
-                 <property name="minimumSize">
-                  <size>
-                   <width>20</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>20</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="PyDMDrawingCircle" name="mirror_2_circle">
-                 <property name="minimumSize">
-                  <size>
-                   <width>20</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>20</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="1">
-                <widget class="PyDMDrawingCircle" name="mirror_3_circle">
-                 <property name="minimumSize">
-                  <size>
-                   <width>20</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>20</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="toolTip">
-                  <string/>
-                 </property>
-                 <property name="whatsThis">
-                  <string/>
                  </property>
                 </widget>
                </item>
