@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from os import path
+from math import sin, cos, pi
 from pydm import Display
 from pydm.PyQt.QtCore import pyqtSlot
 from pydm.PyQt.QtGui import QDoubleValidator
@@ -18,10 +19,10 @@ class SkywalkerGui(Display):
             objects. Each inner dictionary must have a 'mirror' key that maps
             to a mirror object and an 'imager' key that maps to an areadetector
             pim. There may also be an optional 'rotation' key that specifies a
-            clockwise rotation of the image and centroid in degrees, and an
-            optional 'slits' key that maps to an aligned slits object. These
-            objects are expected to follow the conventions of the pcds-devices
-            module.
+            counterclockwise rotation of the image and centroid in degrees,
+            and an optional 'slits' key that maps to an aligned slits object.
+            These objects are expected to follow the conventions of the
+            pcds-devices module.
             For example, a valid system entry might be:
                 {'m1h': {'mirror': m1h, 'imager': hx2,
                          'rotation': -90, 'slits': hx2_slits}}
@@ -38,6 +39,8 @@ class SkywalkerGui(Display):
         self.alignments = alignments
 
         self.goal_cache = {}
+        self.beam_x = None
+        self.beam_y = None
 
         # Populate image title combo box
         self.ui.image_title_combo.clear()
@@ -80,6 +83,17 @@ class SkywalkerGui(Display):
     @property
     def imagers(self):
         return [self.system[act]['imager'] for act in self.active_system]
+
+    @property
+    def goals(self):
+        vals = []
+        for line_edit in self.get_widget_set('goal_value'):
+            goal, ok = line_edit.text.toFloat()
+            if ok:
+                vals.append(goal)
+            else:
+                vals.append(None)
+        return vals
 
     def none_pad(self, obj_list):
         padded = []
@@ -197,10 +211,84 @@ class SkywalkerGui(Display):
         """
         system_entry = self.system[system_key]
         imager = system_entry['imager']
+        slits = system_entry.get('slits')
+        rotation = system_entry.get('rotation', 0)
+        self.imager = imager
+        self.slits = slits
+        self.rotation = rotation
+        self.procedure_index = self.imagers.index(imager)
 
         # Make sure the combobox matches the image
         index = self.all_imager_names.index(imager.name)
         self.ui.image_title_combo.setCurrentIndex(index)
+        self.ui.readback_imager_title.setText(imager.name)
+
+        # Disconnect image PVs
+        self.ui.image.resetImageChannel()
+        self.ui.image.resetWidthChannel()
+
+        # Handle rotation
+        self.ui.image.getImageItem().setRotation(rotation)
+
+        # Connect image PVs
+        image2 = imager.detector.image2
+        self.ui.image.setWidthChannel(image2.width.pvname)
+        self.ui.image.setImageChannel(image2.image.pvname)
+
+        # Centroid stuff
+        self.ui.beam_x_label
+        self.ui.beam_y_label
+
+        if self.beam_x is not None:
+            self.beam_x.clear_sub(self.update_beam_pos)
+
+        stats2 = imager.detector.stats2
+        self.beam_x = stats2.centroid_x
+        self.beam_y = stats2.centroid_y
+
+        self.beam_x.subcribe(self.update_beam_pos)
+
+    def update_beam_pos(self, *args, **kwargs):
+        centroid_x = self.beam_x.value
+        centroid_y = self.beam_y.value
+        pix_x = self.imager.detector.array_size.array_size_x.value
+        pix_y = self.imager.detector.array_size.array_size_y.value
+
+        rotation = self.rotation
+
+        def to_rad(deg):
+            return deg*pi/180
+
+        def sind(deg):
+            return sin(to_rad(deg))
+
+        def cosd(deg):
+            return cos(to_rad(deg))
+
+        def rotate(x, y, deg):
+            x2 = x * cosd(deg) - y * sind(deg)
+            y2 = x * sind(deg) + y * cosd(deg)
+            return (x2, y2)
+
+        rotation = -rotation
+        xpos, ypos = rotate(centroid_x, centroid_y, rotation)
+        pix_x, pix_y = rotate(pix_x, pix_y, rotation)
+
+        if xpos < 0:
+            xpos += abs(pix_x)
+        if ypos < 0:
+            ypos += abs(pix_y)
+
+        self.ui.beam_x_value.setText(str(xpos))
+        self.ui.beam_y_value.setText(str(ypos))
+
+        goal = self.goals[self.procedure_index]
+        if goal is None:
+            self.ui.beam_x_delta.clear()
+        else:
+            self.ui.beam_x_delta.setText(str(goal - xpos))
+        # No y delta yet, there isn't a y goal pos!
+        # self.ui.beam_y_delta.setText()
 
     def ui_filename(self):
         return 'skywalker_gui.ui'
