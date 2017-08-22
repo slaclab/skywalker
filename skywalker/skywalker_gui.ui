@@ -1,26 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1103</width>
-    <height>987</height>
+    <width>1095</width>
+    <height>1001</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Skywalker</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="centralwidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1097</width>
+     <height>991</height>
+    </rect>
+   </property>
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>30</y>
       <width>1077</width>
-      <height>1107</height>
+      <height>951</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="main_layout">
@@ -1096,6 +1104,12 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
          <height>250</height>
         </size>
        </property>
@@ -1153,7 +1167,16 @@
    <addaction name="menuSettings"/>
    <addaction name="menuRelated"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>3</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
  <customwidgets>
   <customwidget>
