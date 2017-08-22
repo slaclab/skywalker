@@ -248,31 +248,22 @@ class SkywalkerGui(Display):
 
         self.beam_x.subcribe(self.update_beam_pos)
 
+        if slits is not None:
+            self.ui.readback_slits_title.setText(slits.name)
+            self.ui.slit_x_width.channel = slits.xwidth.readback.pvname
+            self.ui.slit_y_width.channel = slits.ywidth.readback.pvname
+
     def update_beam_pos(self, *args, **kwargs):
         centroid_x = self.beam_x.value
         centroid_y = self.beam_y.value
-        pix_x = self.imager.detector.array_size.array_size_x.value
-        pix_y = self.imager.detector.array_size.array_size_y.value
+        size_x = self.imager.detector.array_size.array_size_x.value
+        size_y = self.imager.detector.array_size.array_size_y.value
 
         rotation = self.rotation
 
-        def to_rad(deg):
-            return deg*pi/180
-
-        def sind(deg):
-            return sin(to_rad(deg))
-
-        def cosd(deg):
-            return cos(to_rad(deg))
-
-        def rotate(x, y, deg):
-            x2 = x * cosd(deg) - y * sind(deg)
-            y2 = x * sind(deg) + y * cosd(deg)
-            return (x2, y2)
-
         rotation = -rotation
         xpos, ypos = rotate(centroid_x, centroid_y, rotation)
-        pix_x, pix_y = rotate(pix_x, pix_y, rotation)
+        pix_x, pix_y = rotate(size_x, size_y, rotation)
 
         if xpos < 0:
             xpos += abs(pix_x)
@@ -296,5 +287,23 @@ class SkywalkerGui(Display):
     def ui_filepath(self):
         return path.join(path.dirname(path.realpath(__file__)),
                          self.ui_filename())
+
+
+def to_rad(deg):
+    return deg*pi/180
+
+
+def sind(deg):
+    return sin(to_rad(deg))
+
+
+def cosd(deg):
+    return cos(to_rad(deg))
+
+
+def rotate(x, y, deg):
+    x2 = x * cosd(deg) - y * sind(deg)
+    y2 = x * sind(deg) + y * cosd(deg)
+    return (x2, y2)
 
 intelclass = SkywalkerGui # NOQA
