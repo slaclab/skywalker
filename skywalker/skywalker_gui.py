@@ -2,15 +2,37 @@
 # -*- coding: utf-8 -*-
 from os import path
 from math import sin, cos, pi
+
+from pswalker.config import homs_system
+
 from pydm import Display
 from pydm.PyQt.QtCore import pyqtSlot
 from pydm.PyQt.QtGui import QDoubleValidator
 
 MAX_MIRRORS = 4
 
+config = homs_system()
+
+system = dict(
+    m1h=dict(mirror=config['m1h'],
+             imager=config['hx2'],
+             slits=config['hx2_slits']),
+    m2h=dict(mirror=config['m2h'],
+             imager=config['dg3'],
+             slits=config['dg3_slits']),
+    mfx=dict(mirror=config['xrtm2'],
+             imager=config['mfxdg1'],
+             slits=config['mfxdg1_slits'])
+)
+
+alignments = {'HOMS': [['m1h', 'm2h']],
+              'MFX': [['mfx']],
+              'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
+
 
 class SkywalkerGui(Display):
-    def __init__(self, system, alignments, parent=None, args=None):
+    def __init__(self, system=system, alignments=alignments, parent=None,
+                 args=None):
         """
         Parameters
         ----------
