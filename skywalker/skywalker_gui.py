@@ -65,7 +65,6 @@ class SkywalkerGui(Display):
 
         self.goal_cache = {}
         self.beam_x = None
-        self.beam_y = None
         self.imager = None
 
         # Populate image title combo box
@@ -178,7 +177,8 @@ class SkywalkerGui(Display):
                      mirror_circles,
                      mirror_rbvs,
                      mirror_sets)
-        for mirr, img, slit, glabel, gedit, scheck, mlabel, mcircle, mrbv, mset in my_zip:
+        for (mirr, img, slit, glabel, gedit, scheck,
+             mlabel, mcircle, mrbv, mset) in my_zip:
             # Cache goal values and clear
             old_goal = str(gedit.text())
             if len(old_goal) > 0:
@@ -207,7 +207,6 @@ class SkywalkerGui(Display):
                 glabel.setText(img.name)
                 mlabel.setText(mirr.name)
                 if slit is None:
-                    scheck.setText("")
                     scheck.hide()
                 else:
                     scheck.setText(slit.name)
@@ -215,7 +214,7 @@ class SkywalkerGui(Display):
 
                 # Set up input validation and check cache for value
                 # TODO different range for different imager
-                gedit.setValidator(QDoubleValidator(0., 480., 3))
+                gedit.setValidator(QDoubleValidator(0., 1000., 3))
                 cached_goal = self.goal_cache.get(img.name)
                 if cached_goal is None:
                     gedit.clear()
@@ -294,17 +293,22 @@ class SkywalkerGui(Display):
 
         self.beam_x.subscribe(self.update_beam_pos)
 
+        # Slits stuff
         self.ui.readback_slits_title.clear()
-        clear_pydm_connection(self.ui.slit_x_width)
-        clear_pydm_connection(self.ui.slit_y_width)
+        xwidget = self.ui.slit_x_width
+        ywidget = self.ui.slit_y_width
+        clear_pydm_connection(xwidget)
+        clear_pydm_connection(ywidget)
         if slits is not None:
+            xname = slits.xwidth.readback.pvname
+            yname = slits.ywidth.readback.pvname
             self.ui.readback_slits_title.setText(slits.name)
-            # self.ui.slit_x_width.channel = 'ca://' + slits.xwidth.readback.pvname
-            self.ui.slit_x_width.setChannel('ca://' + slits.xwidth.readback.pvname)
-            # self.ui.slit_y_width.channel = 'ca://' + slits.ywidth.readback.pvname
-            self.ui.slit_y_width.setChannel('ca://' + slits.ywidth.readback.pvname)
-            create_pydm_connection(self.ui.slit_x_width)
-            create_pydm_connection(self.ui.slit_y_width)
+            # xwidget.channel = 'ca://' + xname
+            xwidget.setChannel('ca://' + xname)
+            # xwidget = 'ca://' + xname
+            ywidget.setChannel('ca://' + yname)
+            create_pydm_connection(xwidget)
+            create_pydm_connection(ywidget)
 
     def initialize_image(self, imager):
         # Disconnect image PVs
