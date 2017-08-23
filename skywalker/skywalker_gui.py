@@ -79,12 +79,18 @@ class SkywalkerGui(Display):
         for align in alignments.keys():
             self.ui.procedure_combo.addItem(align)
 
+        # Do not connect any PVs during init. PYDM connects all needed PVs
+        # right after init, so if we also connect them then we've done it
+        # twice! This can cause problems with waveform cpu usage and display
+        # glitches.
+
         # Initialize the screen with whatever the first procedure is
-        self.select_procedure(self.ui.procedure_combo.currentText())
+        self.select_procedure(self.ui.procedure_combo.currentText(),
+                              connect=False)
 
         # Initialize the screen with the first camera in the first procedure
         system_key = alignments[self.procedure][0][0]
-        self.select_system_entry(system_key)
+        self.select_system_entry(system_key, connect=False)
 
         # When we change the procedure, reinitialize the control portions
         procedure_changed = self.ui.procedure_combo.activated[str]
@@ -150,7 +156,7 @@ class SkywalkerGui(Display):
         return self.none_pad(self.slits)
 
     @pyqtSlot(str)
-    def select_procedure(self, procedure):
+    def select_procedure(self, procedure, connect=True):
         """
         Change on-screen labels and pv connections to match the current
         procedure.
@@ -187,9 +193,10 @@ class SkywalkerGui(Display):
 
             # Reset all checkboxes and kill pv connections
             scheck.setChecked(False)
-            clear_pydm_connection(mcircle)
-            clear_pydm_connection(mrbv)
-            clear_pydm_connection(mset)
+            if connect:
+                clear_pydm_connection(mcircle)
+                clear_pydm_connection(mrbv)
+                clear_pydm_connection(mset)
 
             # If no imager, we hide the unneeded widgets
             if img is None:
@@ -228,9 +235,10 @@ class SkywalkerGui(Display):
                 mrbv.setChannel('ca://' + mirr.pitch.user_readback.pvname)
                 mset.channel = 'ca://' + mirr.pitch.user_setpoint.pvname
 
-                create_pydm_connection(mcircle)
-                create_pydm_connection(mrbv)
-                create_pydm_connection(mset)
+                if connect:
+                    create_pydm_connection(mcircle)
+                    create_pydm_connection(mrbv)
+                    create_pydm_connection(mset)
 
                 # Make sure things are visible
                 glabel.show()
@@ -257,7 +265,7 @@ class SkywalkerGui(Display):
                 return self.select_system_entry(k)
 
     @pyqtSlot(str)
-    def select_system_entry(self, system_key):
+    def select_system_entry(self, system_key, connect=True):
         """
         Change on-screen information and displayed image to correspond to the
         selected mirror-imager-slit trio.
@@ -286,7 +294,7 @@ class SkywalkerGui(Display):
             self.beam_x_stats.clear_sub(self.update_beam_pos)
 
         # Set up the imager
-        self.initialize_image(imager)
+        self.initialize_image(imager, connect=connect)
 
         # Centroid stuff
         stats2 = imager.detector.stats2
@@ -299,8 +307,9 @@ class SkywalkerGui(Display):
         self.ui.readback_slits_title.clear()
         slit_x_widget = self.ui.slit_x_width
         slit_y_widget = self.ui.slit_y_width
-        clear_pydm_connection(slit_x_widget)
-        clear_pydm_connection(slit_y_widget)
+        if connect:
+            clear_pydm_connection(slit_x_widget)
+            clear_pydm_connection(slit_y_widget)
         if slits is not None:
             slit_x_name = slits.xwidth.readback.pvname
             slit_y_name = slits.ywidth.readback.pvname
@@ -309,12 +318,14 @@ class SkywalkerGui(Display):
             slit_x_widget.setChannel('ca://' + slit_x_name)
             # slit_y_widget.channel = 'ca://' + slit_y_name
             slit_y_widget.setChannel('ca://' + slit_y_name)
-            create_pydm_connection(slit_x_widget)
-            create_pydm_connection(slit_y_widget)
+            if connect:
+                create_pydm_connection(slit_x_widget)
+                create_pydm_connection(slit_y_widget)
 
-    def initialize_image(self, imager):
+    def initialize_image(self, imager, connect=True):
         # Disconnect image PVs
-        clear_pydm_connection(self.ui.image)
+        if connect:
+            clear_pydm_connection(self.ui.image)
         self.ui.image.resetImageChannel()
         self.ui.image.resetWidthChannel()
 
@@ -330,7 +341,8 @@ class SkywalkerGui(Display):
         image2 = imager.detector.image2
         self.ui.image.setWidthChannel('ca://' + image2.width.pvname)
         self.ui.image.setImageChannel('ca://' + image2.array_data.pvname)
-        create_pydm_connection(self.ui.image)
+        if connect:
+            create_pydm_connection(self.ui.image)
 
         # TODO figure out how image sizing really works
         self.ui.image.resize(self.pix_x, self.pix_y)
