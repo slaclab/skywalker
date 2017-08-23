@@ -64,7 +64,7 @@ class SkywalkerGui(Display):
         self.alignments = alignments
 
         self.goal_cache = {}
-        self.beam_x = None
+        self.beam_x_stats = None
         self.imager = None
 
         # Populate image title combo box
@@ -185,12 +185,13 @@ class SkywalkerGui(Display):
                 self.goal_cache[str(glabel.text())] = float(old_goal)
             gedit.clear()
 
+            # Reset all checkboxes and kill pv connections
             scheck.setChecked(False)
             clear_pydm_connection(mcircle)
             clear_pydm_connection(mrbv)
             clear_pydm_connection(mset)
 
-            # If no imager, we hide/dc the unneeded widgets
+            # If no imager, we hide the unneeded widgets
             if img is None:
                 glabel.hide()
                 gedit.hide()
@@ -238,8 +239,9 @@ class SkywalkerGui(Display):
                 mcircle.show()
                 mrbv.show()
                 mset.show()
+        # If we already had set up an imager, update beam delta with new goals
         if self.imager is not None:
-            self.select_imager(self.imager.name)
+            self.update_beam_delta()
 
     def get_widget_set(self, name, num=MAX_MIRRORS):
         widgets = []
@@ -280,35 +282,35 @@ class SkywalkerGui(Display):
         self.ui.readback_imager_title.setText(imager.name)
 
         # Some cleanup
-        if self.beam_x is not None:
-            self.beam_x.clear_sub(self.update_beam_pos)
+        if self.beam_x_stats is not None:
+            self.beam_x_stats.clear_sub(self.update_beam_pos)
 
         # Set up the imager
         self.initialize_image(imager)
 
         # Centroid stuff
         stats2 = imager.detector.stats2
-        self.beam_x = stats2.centroid.x
-        self.beam_y = stats2.centroid.y
+        self.beam_x_stats = stats2.centroid.x
+        self.beam_y_stats = stats2.centroid.y
 
-        self.beam_x.subscribe(self.update_beam_pos)
+        self.beam_x_stats.subscribe(self.update_beam_pos)
 
         # Slits stuff
         self.ui.readback_slits_title.clear()
-        xwidget = self.ui.slit_x_width
-        ywidget = self.ui.slit_y_width
-        clear_pydm_connection(xwidget)
-        clear_pydm_connection(ywidget)
+        slit_x_widget = self.ui.slit_x_width
+        slit_y_widget = self.ui.slit_y_width
+        clear_pydm_connection(slit_x_widget)
+        clear_pydm_connection(slit_y_widget)
         if slits is not None:
-            xname = slits.xwidth.readback.pvname
-            yname = slits.ywidth.readback.pvname
+            slit_x_name = slits.xwidth.readback.pvname
+            slit_y_name = slits.ywidth.readback.pvname
             self.ui.readback_slits_title.setText(slits.name)
-            # xwidget.channel = 'ca://' + xname
-            xwidget.setChannel('ca://' + xname)
-            # xwidget = 'ca://' + xname
-            ywidget.setChannel('ca://' + yname)
-            create_pydm_connection(xwidget)
-            create_pydm_connection(ywidget)
+            # slit_x_widget.channel = 'ca://' + slit_x_name
+            slit_x_widget.setChannel('ca://' + slit_x_name)
+            # slit_y_widget.channel = 'ca://' + slit_y_name
+            slit_y_widget.setChannel('ca://' + slit_y_name)
+            create_pydm_connection(slit_x_widget)
+            create_pydm_connection(slit_y_widget)
 
     def initialize_image(self, imager):
         # Disconnect image PVs
@@ -330,12 +332,13 @@ class SkywalkerGui(Display):
         self.ui.image.setImageChannel('ca://' + image2.array_data.pvname)
         create_pydm_connection(self.ui.image)
 
+        # TODO figure out how image sizing really works
         self.ui.image.resize(self.pix_x, self.pix_y)
 
     @pyqtSlot()
     def update_beam_pos(self, *args, **kwargs):
-        centroid_x = self.beam_x.value
-        centroid_y = self.beam_y.value
+        centroid_x = self.beam_x_stats.value
+        centroid_y = self.beam_y_stats.value
 
         rotation = -self.rotation
         xpos, ypos = rotate(centroid_x, centroid_y, rotation)
