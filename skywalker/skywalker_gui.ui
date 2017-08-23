@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1095</width>
-    <height>1001</height>
+    <height>975</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,14 +19,14 @@
      <x>0</x>
      <y>0</y>
      <width>1097</width>
-     <height>991</height>
+     <height>971</height>
     </rect>
    </property>
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>30</y>
+      <y>10</y>
       <width>1077</width>
       <height>951</height>
      </rect>
@@ -64,20 +64,26 @@
           <widget class="PyDMImageView" name="image">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>2</horstretch>
-             <verstretch>3</verstretch>
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="minimumSize">
             <size>
-             <width>480</width>
-             <height>640</height>
+             <width>400</width>
+             <height>400</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>480</width>
-             <height>640</height>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="baseSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
             </size>
            </property>
            <property name="toolTip">
@@ -700,6 +706,15 @@
                  <property name="whatsThis">
                   <string/>
                  </property>
+                 <property name="userDefinedPrecision" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="showUnits" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="precision">
+                  <number>3</number>
+                 </property>
                 </widget>
                </item>
                <item row="0" column="2">
@@ -715,6 +730,15 @@
                  </property>
                  <property name="whatsThis">
                   <string/>
+                 </property>
+                 <property name="userDefinedPrecision" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="showUnits" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="precision">
+                  <number>3</number>
                  </property>
                 </widget>
                </item>
@@ -757,6 +781,15 @@
                  </property>
                  <property name="whatsThis">
                   <string/>
+                 </property>
+                 <property name="userDefinedPrecision" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="showUnits" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="precision">
+                  <number>3</number>
                  </property>
                 </widget>
                </item>
@@ -911,6 +944,15 @@
                  <property name="whatsThis">
                   <string/>
                  </property>
+                 <property name="userDefinedPrecision" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="showUnits" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                 <property name="precision">
+                  <number>3</number>
+                 </property>
                 </widget>
                </item>
                <item row="3" column="3">
@@ -998,6 +1040,9 @@
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
                  </property>
+                 <property name="precision">
+                  <number>3</number>
+                 </property>
                 </widget>
                </item>
                <item row="1" column="1">
@@ -1016,6 +1061,9 @@
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignCenter</set>
+                 </property>
+                 <property name="precision">
+                  <number>3</number>
                  </property>
                 </widget>
                </item>
@@ -1138,34 +1186,6 @@
      </item>
     </layout>
    </widget>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1103</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuSettings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuRelated">
-    <property name="title">
-     <string>Related Screens</string>
-    </property>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuSettings"/>
-   <addaction name="menuRelated"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="geometry">

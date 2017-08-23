@@ -6,7 +6,7 @@ from math import sin, cos, pi
 from pswalker.config import homs_system
 
 from pydm import Display
-from pydm.PyQt.QtCore import pyqtSlot
+from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication
 from pydm.PyQt.QtGui import QDoubleValidator
 
 MAX_MIRRORS = 4
@@ -16,13 +16,16 @@ config = homs_system()
 system = dict(
     m1h=dict(mirror=config['m1h'],
              imager=config['hx2'],
-             slits=config['hx2_slits']),
+             slits=config['hx2_slits'],
+             rotation=90),
     m2h=dict(mirror=config['m2h'],
              imager=config['dg3'],
-             slits=config['dg3_slits']),
+             slits=config['dg3_slits'],
+             rotation=90),
     mfx=dict(mirror=config['xrtm2'],
              imager=config['mfxdg1'],
-             slits=config['mfxdg1_slits'])
+             slits=config['mfxdg1_slits'],
+             rotation=90)
 )
 
 alignments = {'HOMS': [['m1h', 'm2h']],
@@ -63,6 +66,7 @@ class SkywalkerGui(Display):
         self.goal_cache = {}
         self.beam_x = None
         self.beam_y = None
+        self.imager = None
 
         # Populate image title combo box
         self.ui.image_title_combo.clear()
@@ -81,7 +85,7 @@ class SkywalkerGui(Display):
 
         # Initialize the screen with the first camera in the first procedure
         system_key = alignments[self.procedure][0][0]
-        self.select_imager(system_key)
+        self.select_system_entry(system_key)
 
         # When we change the procedure, reinitialize the control portions
         procedure_changed = self.ui.procedure_combo.activated[str]
@@ -90,6 +94,11 @@ class SkywalkerGui(Display):
         # When we change the active imager, swap just the imager
         imager_changed = self.ui.image_title_combo.activated[str]
         imager_changed.connect(self.select_imager)
+
+        # When we change the goals, update the deltas
+        for goal_value in self.get_widget_set('goal_value'):
+            goal_changed = goal_value.editingFinished
+            goal_changed.connect(self.update_beam_delta)
 
     @property
     def active_system(self):
@@ -107,14 +116,19 @@ class SkywalkerGui(Display):
         return [self.system[act]['imager'] for act in self.active_system]
 
     @property
+    def slits(self):
+        return [self.system[act].get('slits') for act in self.active_system]
+
+    @property
     def goals(self):
         vals = []
         for line_edit in self.get_widget_set('goal_value'):
-            goal, ok = line_edit.text.toFloat()
-            if ok:
-                vals.append(goal)
-            else:
-                vals.append(None)
+            goal = line_edit.text()
+            try:
+                goal = float(goal)
+            except:
+                goal = None
+            vals.append(goal)
         return vals
 
     def none_pad(self, obj_list):
@@ -134,8 +148,7 @@ class SkywalkerGui(Display):
 
     @property
     def slits_padded(self):
-        # TODO get slits that correspond with imagers or are None when no slit
-        raise NotImplementedError
+        return self.none_pad(self.slits)
 
     @pyqtSlot(str)
     def select_procedure(self, procedure):
@@ -172,12 +185,13 @@ class SkywalkerGui(Display):
                 self.goal_cache[str(glabel.text())] = float(old_goal)
             gedit.clear()
 
+            scheck.setChecked(False)
+            clear_pydm_connection(mcircle)
+            clear_pydm_connection(mrbv)
+            clear_pydm_connection(mset)
+
             # If no imager, we hide/dc the unneeded widgets
             if img is None:
-                mcircle.channel = ''
-                mrbv.channel = ''
-                mset.channel = ''
-
                 glabel.hide()
                 gedit.hide()
                 scheck.hide()
@@ -189,10 +203,11 @@ class SkywalkerGui(Display):
             # Otherwise, make sure the widgets are visible and set parameters
             else:
                 # Basic labels for goals, mirrors, and slits
+                glabel.clear()
                 glabel.setText(img.name)
                 mlabel.setText(mirr.name)
                 if slit is None:
-                    scheck.clear()
+                    scheck.setText("")
                     scheck.hide()
                 else:
                     scheck.setText(slit.name)
@@ -202,13 +217,20 @@ class SkywalkerGui(Display):
                 # TODO different range for different imager
                 gedit.setValidator(QDoubleValidator(0., 480., 3))
                 cached_goal = self.goal_cache.get(img.name)
-                if cached_goal is not None:
+                if cached_goal is None:
+                    gedit.clear()
+                else:
                     gedit.setText(str(cached_goal))
 
                 # Connect mirror PVs
                 mcircle.channel = 'ca://' + mirr.pitch.motor_done_move.pvname
-                mrbv.channel = 'ca://' + mirr.pitch.user_readback.pvname
+                # mrbv.channel = 'ca://' + mirr.pitch.user_readback.pvname
+                mrbv.setChannel('ca://' + mirr.pitch.user_readback.pvname)
                 mset.channel = 'ca://' + mirr.pitch.user_setpoint.pvname
+
+                create_pydm_connection(mcircle)
+                create_pydm_connection(mrbv)
+                create_pydm_connection(mset)
 
                 # Make sure things are visible
                 glabel.show()
@@ -217,6 +239,8 @@ class SkywalkerGui(Display):
                 mcircle.show()
                 mrbv.show()
                 mset.show()
+        if self.imager is not None:
+            self.select_imager(self.imager.name)
 
     def get_widget_set(self, name, num=MAX_MIRRORS):
         widgets = []
@@ -226,7 +250,13 @@ class SkywalkerGui(Display):
         return widgets
 
     @pyqtSlot(str)
-    def select_imager(self, system_key):
+    def select_imager(self, imager_name):
+        for k, v in self.system.items():
+            if imager_name == v['imager'].name:
+                return self.select_system_entry(k)
+
+    @pyqtSlot(str)
+    def select_system_entry(self, system_key):
         """
         Change on-screen information and displayed image to correspond to the
         selected mirror-imager-slit trio.
@@ -236,72 +266,101 @@ class SkywalkerGui(Display):
         slits = system_entry.get('slits')
         rotation = system_entry.get('rotation', 0)
         self.imager = imager
-        self.slits = slits
+        self.slit = slits
         self.rotation = rotation
-        self.procedure_index = self.imagers.index(imager)
+        try:
+            self.procedure_index = self.imagers.index(imager)
+        except ValueError:
+            # This means we picked an imager not in this procedure
+            # This is allowed, but it means there is no goal delta!
+            self.procedure_index = None
 
         # Make sure the combobox matches the image
         index = self.all_imager_names.index(imager.name)
         self.ui.image_title_combo.setCurrentIndex(index)
         self.ui.readback_imager_title.setText(imager.name)
 
+        # Some cleanup
+        if self.beam_x is not None:
+            self.beam_x.clear_sub(self.update_beam_pos)
+
+        # Set up the imager
+        self.initialize_image(imager)
+
+        # Centroid stuff
+        stats2 = imager.detector.stats2
+        self.beam_x = stats2.centroid.x
+        self.beam_y = stats2.centroid.y
+
+        self.beam_x.subscribe(self.update_beam_pos)
+
+        self.ui.readback_slits_title.clear()
+        clear_pydm_connection(self.ui.slit_x_width)
+        clear_pydm_connection(self.ui.slit_y_width)
+        if slits is not None:
+            self.ui.readback_slits_title.setText(slits.name)
+            # self.ui.slit_x_width.channel = 'ca://' + slits.xwidth.readback.pvname
+            self.ui.slit_x_width.setChannel('ca://' + slits.xwidth.readback.pvname)
+            # self.ui.slit_y_width.channel = 'ca://' + slits.ywidth.readback.pvname
+            self.ui.slit_y_width.setChannel('ca://' + slits.ywidth.readback.pvname)
+            create_pydm_connection(self.ui.slit_x_width)
+            create_pydm_connection(self.ui.slit_y_width)
+
+    def initialize_image(self, imager):
         # Disconnect image PVs
+        clear_pydm_connection(self.ui.image)
         self.ui.image.resetImageChannel()
         self.ui.image.resetWidthChannel()
 
         # Handle rotation
-        self.ui.image.getImageItem().setRotation(rotation)
+        self.ui.image.getImageItem().setRotation(self.rotation)
+        size_x = imager.detector.cam.array_size.array_size_x.value
+        size_y = imager.detector.cam.array_size.array_size_y.value
+        pix_x, pix_y = rotate(size_x, size_y, self.rotation)
+        self.pix_x = int(round(abs(pix_x)))
+        self.pix_y = int(round(abs(pix_y)))
 
         # Connect image PVs
         image2 = imager.detector.image2
-        self.ui.image.setWidthChannel(image2.width.pvname)
-        self.ui.image.setImageChannel(image2.image.pvname)
+        self.ui.image.setWidthChannel('ca://' + image2.width.pvname)
+        self.ui.image.setImageChannel('ca://' + image2.array_data.pvname)
+        create_pydm_connection(self.ui.image)
 
-        # Centroid stuff
-        self.ui.beam_x_label
-        self.ui.beam_y_label
+        self.ui.image.resize(self.pix_x, self.pix_y)
 
-        if self.beam_x is not None:
-            self.beam_x.clear_sub(self.update_beam_pos)
-
-        stats2 = imager.detector.stats2
-        self.beam_x = stats2.centroid_x
-        self.beam_y = stats2.centroid_y
-
-        self.beam_x.subcribe(self.update_beam_pos)
-
-        if slits is not None:
-            self.ui.readback_slits_title.setText(slits.name)
-            self.ui.slit_x_width.channel = slits.xwidth.readback.pvname
-            self.ui.slit_y_width.channel = slits.ywidth.readback.pvname
-
+    @pyqtSlot()
     def update_beam_pos(self, *args, **kwargs):
         centroid_x = self.beam_x.value
         centroid_y = self.beam_y.value
-        size_x = self.imager.detector.array_size.array_size_x.value
-        size_y = self.imager.detector.array_size.array_size_y.value
 
-        rotation = self.rotation
-
-        rotation = -rotation
+        rotation = -self.rotation
         xpos, ypos = rotate(centroid_x, centroid_y, rotation)
-        pix_x, pix_y = rotate(size_x, size_y, rotation)
 
         if xpos < 0:
-            xpos += abs(pix_x)
+            xpos += self.pix_x
         if ypos < 0:
-            ypos += abs(pix_y)
+            ypos += self.pix_y
+
+        self.xpos = xpos
+        self.ypos = ypos
 
         self.ui.beam_x_value.setText(str(xpos))
         self.ui.beam_y_value.setText(str(ypos))
 
-        goal = self.goals[self.procedure_index]
-        if goal is None:
+        self.update_beam_delta()
+
+    @pyqtSlot()
+    def update_beam_delta(self, *args, **kwargs):
+        if self.procedure_index is None:
             self.ui.beam_x_delta.clear()
         else:
-            self.ui.beam_x_delta.setText(str(goal - xpos))
+            goal = self.goals[self.procedure_index]
+            if goal is None:
+                self.ui.beam_x_delta.clear()
+            else:
+                self.ui.beam_x_delta.setText(str(self.xpos - goal))
         # No y delta yet, there isn't a y goal pos!
-        # self.ui.beam_y_delta.setText()
+        self.ui.beam_y_delta.clear()
 
     def ui_filename(self):
         return 'skywalker_gui.ui'
@@ -309,6 +368,17 @@ class SkywalkerGui(Display):
     def ui_filepath(self):
         return path.join(path.dirname(path.realpath(__file__)),
                          self.ui_filename())
+
+
+def clear_pydm_connection(widget):
+    QApp = QCoreApplication.instance()
+    QApp.close_widget_connections(widget)
+    widget._channels = None
+
+
+def create_pydm_connection(widget):
+    QApp = QCoreApplication.instance()
+    QApp.establish_widget_connections(widget)
 
 
 def to_rad(deg):
