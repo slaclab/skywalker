@@ -1,14 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 from os import path
 from math import sin, cos, pi
 
 from pswalker.config import homs_system
 
 from pydm import Display
-from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication
+from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication, QPoint
 from pydm.PyQt.QtGui import QDoubleValidator
 
+logging.basicConfig(level=logging.DEBUG,
+                    format=('%(asctime)s '
+                            '%(name)-12s '
+                            '%(levelname)-8s '
+                            '%(message)s'),
+                    datefmt='%m-%d %H:%M:%S',
+                    filename='./skywalker_debug.log',
+                    filemode='a')
+logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
 
 config = homs_system()
@@ -105,6 +115,15 @@ class SkywalkerGui(Display):
             goal_changed = goal_value.editingFinished
             goal_changed.connect(self.update_beam_delta)
 
+        # Now that init is done, set up the gui logger
+        console = GuiHandler(self.ui.log_text)
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter(fmt='%(asctime)s %(message)s',
+                                      datefmt='%m-%d %H:%M:%S')
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
+        logger.info("Skywalker GUI initialized.")
+
     @property
     def active_system(self):
         active_system = []
@@ -161,6 +180,7 @@ class SkywalkerGui(Display):
         Change on-screen labels and pv connections to match the current
         procedure.
         """
+        logger.info('Selecting procedure %s', procedure)
         # Set the procedure member that will be used elsewhere
         self.procedure = procedure
 
@@ -260,6 +280,7 @@ class SkywalkerGui(Display):
 
     @pyqtSlot(str)
     def select_imager(self, imager_name):
+        logger.info('Selecting imager %s', imager_name)
         for k, v in self.system.items():
             if imager_name == v['imager'].name:
                 return self.select_system_entry(k)
@@ -387,6 +408,22 @@ class SkywalkerGui(Display):
     def ui_filepath(self):
         return path.join(path.dirname(path.realpath(__file__)),
                          self.ui_filename())
+
+
+class GuiHandler(logging.Handler):
+    terminator = '\n'
+
+    def __init__(self, text_widget, level=logging.NOTSET):
+        super().__init__(level=level)
+        self.text_widget = text_widget
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            cursor = self.text_widget.cursorForPosition(QPoint(0, 0))
+            cursor.insertText(msg + self.terminator)
+        except Exception:
+            self.handleError(record)
 
 
 def clear_pydm_connection(widget):
