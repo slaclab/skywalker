@@ -436,6 +436,102 @@ class GuiHandler(logging.Handler):
             self.handleError(record)
 
 
+class PydmWidgetGroup:
+    protocol = 'ca://'
+
+    def __init__(self, widgets, pvnames, label=None, name=None, **kwargs):
+        self.widgets = widgets
+        self.label = label
+        self.setup(pvnames, name=name, **kwargs)
+
+    def setup(self, pvnames, name=None, **kwargs):
+        if None not in (self.label, name):
+            self.label.setText(name)
+        for widget, pvname in zip(self.widgets, pvnames):
+            chan = self.protocol + pvname
+            try:
+                widget.setChannel(chan)
+            except:
+                widget.channel = chan
+
+    def change_pvs(self, pvnames, name=None, **kwargs):
+        self.clear_connections()
+        self.setup(pvnames, name=name, **kwargs)
+        self.create_connections()
+
+    def clear_connections(self):
+        for widget in self.widgets:
+            clear_pydm_connection(widget)
+
+    def create_connections(self):
+        for widget in self.widgets:
+            create_pydm_connection(widget)
+
+
+class ObjWidgetGroup(PydmWidgetGroup):
+    def __init__(self, widgets, attrs, obj, label=None, **kwargs):
+        self.attrs = attrs
+        pvnames = self.get_pvnames(obj)
+        super().__init__(widgets, pvnames, label=label, name=obj.name,
+                         **kwargs)
+
+    def change_obj(self, obj, **kwargs):
+        pvnames = self.get_pvnames(obj)
+        self.change_pvs(pvnames, name=obj.name, **kwargs)
+
+    def get_pvnames(self, obj):
+        pvnames = []
+        for attr in self.attrs:
+            sig = self.nested_getattr(obj, attr)
+            pvnames.append(sig.pvname)
+        return pvnames
+
+    def nested_getattr(self, obj, attr):
+        steps = attr.split('.')
+        for step in steps:
+            obj = getattr(obj, step)
+        return obj
+
+
+class ImgObjWidget(ObjWidgetGroup):
+    def __init__(self, img_widget, img_obj, rotation=0):
+        attrs = ['detector.image2.width',
+                 'detector.image2.array_data']
+        super().__init__([img_widget], attrs, img_obj, rotation=rotation)
+
+    def setup(self, pvnames, rotation=0, **kwargs):
+        self.rotation = rotation
+        img_widget = self.widgets[0]
+        width_pv = pvnames[0]
+        image_pv = pvnames[1]
+        img_widget.getImageItem().setRotation(rotation)
+        img_widget.resetImageChannel()
+        img_widget.resetWidthChannel()
+        img_widget.setWidthChannel(self.protocol + width_pv)
+        img_widget.setImageChannel(self.protocol + image_pv)
+
+    @property
+    def size(self):
+        rot_x, rot_y = rotate(self.raw_size_x, self.raw_size_y, self.rotation)
+        return (int(round(abs(rot_x))), int(round(abs(rot_y))))
+
+    @property
+    def size_x(self):
+        return self.size[0]
+
+    @property
+    def size_y(self):
+        return self.size[1]
+
+    @property
+    def raw_size_x(self):
+        return self.obj.detector.cam.array_size.array_size_x.value
+
+    @property
+    def raw_size_y(self):
+        return self.obj.detector.cam.array_size.array_size_y.value
+
+
 def clear_pydm_connection(widget):
     QApp = QCoreApplication.instance()
     QApp.close_widget_connections(widget)
