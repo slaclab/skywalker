@@ -91,7 +91,13 @@ class SkywalkerGui(Display):
             goal_changed = goal_value.editingFinished
             goal_changed.connect(self.on_goal_changed)
 
-        # Now that init is done, set up the gui logger
+        self.setup_gui_logger()
+
+    def setup_gui_logger(self):
+        """
+        Initializes the text stream at the bottom of the gui. This text stream
+        is actually just the log messages from Python!
+        """
         console = GuiHandler(self.ui.log_text)
         console.setLevel(logging.INFO)
         formatter = logging.Formatter(fmt='%(asctime)s %(message)s',
