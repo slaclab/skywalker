@@ -421,6 +421,9 @@ class SkywalkerGui(Display):
 
 
 class GuiHandler(logging.Handler):
+    """
+    Logging handler that logs to a scrolling text widget.
+    """
     terminator = '\n'
 
     def __init__(self, text_widget, level=logging.NOTSET):
@@ -436,17 +439,103 @@ class GuiHandler(logging.Handler):
             self.handleError(record)
 
 
-class PydmWidgetGroup:
+class BaseWidgetGroup:
+    """
+    A group of widgets that are part of a set with a single label.
+    """
+    def __init__(self, widgets, label=None, name=None, **kwargs):
+        self.widgets = widgets
+        self.label = label
+        self.setup(name=name, **kwargs)
+
+    def setup(self, name=None, **kwargs):
+        if None not in (self.label, name):
+            self.label.setText(name)
+
+    def hide(self):
+        for widget in self.widgets:
+            widget.hide()
+        if self.label is not None:
+            self.label.hide()
+
+    def show(self):
+        for widget in self.widgets:
+            widget.show()
+        if self.label is not None:
+            self.label.show()
+
+
+class ValueWidgetGroup(BaseWidgetGroup):
+    """
+    A group of widgets that have a user-editable value field.
+    """
+    def __init__(self, line_edit, label, checkbox=None, name=None, cache=None,
+                 validator=None):
+        widgets = [line_edit]
+        if checkbox is not None:
+            widgets.append(checkbox)
+        self.line_edit = line_edit
+        self.checkbox = checkbox
+        if cache is None:
+            self.cache = {}
+        else:
+            self.cache = cache
+        if validator is None:
+            self.force_type = None
+        else:
+            if isinstance(validator, QDoubleValidator):
+                self.force_type = float
+            else:
+                raise NotImplementedError
+            self.line_edit.setValidator(validator)
+        super().__init__(widgets, label=label, name=name)
+
+    def setup(self, name=None, **kwargs):
+        old_name = self.label.text()
+        old_value = self.value
+        if None not in (old_name, old_value):
+            self.cache[old_name] = old_value
+        super().setup(name=name, **kwargs)
+        cache_value = self.cache.get(name)
+        if cache_value is not None:
+            self.value = cache_value
+        if None not in (self.checkbox, name):
+            self.checkbox.setText(name)
+        if self.checkbox is not None:
+            self.checkbox.setChecked(False)
+
+    @property
+    def value(self):
+        raw = self.line_edit.text()
+        if not raw:
+            return None
+        if self.force_type is None:
+            return raw
+        else:
+            try:
+                return self.force_type(raw)
+            except:
+                return None
+
+    @value.setter
+    def value(self, val):
+        txt = str(val)
+        self.line_edit.setText(txt)
+
+
+class PydmWidgetGroup(BaseWidgetGroup):
+    """
+    A group of pydm widgets under a single label that may be set up and reset
+    as a group.
+    """
     protocol = 'ca://'
 
     def __init__(self, widgets, pvnames, label=None, name=None, **kwargs):
-        self.widgets = widgets
-        self.label = label
-        self.setup(pvnames, name=name, **kwargs)
+        super().__init__(self, widgets, label=label, name=name,
+                         pvnames=pvnames, **kwargs)
 
-    def setup(self, pvnames, name=None, **kwargs):
-        if None not in (self.label, name):
-            self.label.setText(name)
+    def setup(self, *, pvnames, name=None, **kwargs):
+        super().setup(name=name, **kwargs)
         for widget, pvname in zip(self.widgets, pvnames):
             chan = self.protocol + pvname
             try:
@@ -469,6 +558,11 @@ class PydmWidgetGroup:
 
 
 class ObjWidgetGroup(PydmWidgetGroup):
+    """
+    A group of pydm widgets that get their channels from an object that can be
+    stripped out and replaced to change context, provided the class is the
+    same.
+    """
     def __init__(self, widgets, attrs, obj, label=None, **kwargs):
         self.attrs = attrs
         pvnames = self.get_pvnames(obj)
@@ -494,12 +588,16 @@ class ObjWidgetGroup(PydmWidgetGroup):
 
 
 class ImgObjWidget(ObjWidgetGroup):
+    """
+    Macros to set up the image widget channels from opyhd areadetector obj.
+    Not really a group but this was convenient.
+    """
     def __init__(self, img_widget, img_obj, rotation=0):
         attrs = ['detector.image2.width',
                  'detector.image2.array_data']
         super().__init__([img_widget], attrs, img_obj, rotation=rotation)
 
-    def setup(self, pvnames, rotation=0, **kwargs):
+    def setup(self, *, pvnames, rotation=0, **kwargs):
         self.rotation = rotation
         img_widget = self.widgets[0]
         width_pv = pvnames[0]
