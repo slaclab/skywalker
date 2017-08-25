@@ -80,16 +80,16 @@ class SkywalkerGui(Display):
 
         # When we change the procedure, reinitialize the control portions
         procedure_changed = self.ui.procedure_combo.activated[str]
-        procedure_changed.connect(self.select_procedure)
+        procedure_changed.connect(self.on_procedure_combo_changed)
 
         # When we change the active imager, swap just the imager
         imager_changed = self.ui.image_title_combo.activated[str]
-        imager_changed.connect(self.select_imager)
+        imager_changed.connect(self.on_image_combo_changed)
 
         # When we change the goals, update the deltas
         for goal_value in self.get_widget_set('goal_value'):
             goal_changed = goal_value.editingFinished
-            goal_changed.connect(self.update_beam_delta)
+            goal_changed.connect(self.on_goal_changed)
 
         # Now that init is done, set up the gui logger
         console = GuiHandler(self.ui.log_text)
@@ -99,6 +99,34 @@ class SkywalkerGui(Display):
         console.setFormatter(formatter)
         logging.getLogger('').addHandler(console)
         logger.info("Skywalker GUI initialized.")
+
+    @pyqtSlot(str)
+    def on_image_combo_changed(self, imager_name):
+        self.select_imager(imager_name)
+
+    @pyqtSlot(str)
+    def on_procedure_combo_changed(self, procedure_name):
+        self.select_procedure(procedure_name)
+
+    @pyqtSlot()
+    def on_goal_changed(self):
+        self.update_beam_delta()
+
+    @pyqtSlot()
+    def on_start_button(self):
+        pass
+
+    @pyqtSlot()
+    def on_pause_button(self):
+        pass
+
+    @pyqtSlot()
+    def on_abort_button(self):
+        pass
+
+    @pyqtSlot()
+    def on_slits_button(self):
+        pass
 
     @property
     def active_system(self):
