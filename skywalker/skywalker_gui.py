@@ -23,55 +23,31 @@ MAX_MIRRORS = 4
 
 config = homs_system()
 
-system = dict(
-    m1h=dict(mirror=config['m1h'],
-             imager=config['hx2'],
-             slits=config['hx2_slits'],
-             rotation=90),
-    m2h=dict(mirror=config['m2h'],
-             imager=config['dg3'],
-             slits=config['dg3_slits'],
-             rotation=90),
-    mfx=dict(mirror=config['xrtm2'],
-             imager=config['mfxdg1'],
-             slits=config['mfxdg1_slits'],
-             rotation=90)
-)
-
-alignments = {'HOMS': [['m1h', 'm2h']],
-              'MFX': [['mfx']],
-              'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
-
 
 class SkywalkerGui(Display):
-    def __init__(self, system=system, alignments=alignments, parent=None,
-                 args=None):
-        """
-        Parameters
-        ----------
-        system: dict
-            Nested dictionary that maps strings to associated dictionaries of
-            objects. Each inner dictionary must have a 'mirror' key that maps
-            to a mirror object and an 'imager' key that maps to an areadetector
-            pim. There may also be an optional 'rotation' key that specifies a
-            counterclockwise rotation of the image and centroid in degrees,
-            and an optional 'slits' key that maps to an aligned slits object.
-            These objects are expected to follow the conventions of the
-            pcds-devices module.
-            For example, a valid system entry might be:
-                {'m1h': {'mirror': m1h, 'imager': hx2,
-                         'rotation': -90, 'slits': hx2_slits}}
+    # System mapping of associated devices
+    system = dict(
+        m1h=dict(mirror=config['m1h'],
+                 imager=config['hx2'],
+                 slits=config['hx2_slits'],
+                 rotation=90),
+        m2h=dict(mirror=config['m2h'],
+                 imager=config['dg3'],
+                 slits=config['dg3_slits'],
+                 rotation=90),
+        mfx=dict(mirror=config['xrtm2'],
+                 imager=config['mfxdg1'],
+                 slits=config['mfxdg1_slits'],
+                 rotation=90)
+    )
 
-        alignments: dict
-            Mapping of alignment procedure name to a list of lists of keys from
-            system, where the innermost lists are associated with skywalker
-            inputs.
-            For example, a valid alignments entry might be:
-                {'HOMS + MFX': [['m1h', 'm2h'], ['m2mfx']]}
-        """
+    # Alignment mapping of which sets to use for each alignment
+    alignments = {'HOMS': [['m1h', 'm2h']],
+                  'MFX': [['mfx']],
+                  'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
+
+    def __init__(self, parent=None, args=None):
         super().__init__(parent=parent, args=args)
-        self.system = system
-        self.alignments = alignments
 
         self.goal_cache = {}
         self.beam_x_stats = None
@@ -80,13 +56,13 @@ class SkywalkerGui(Display):
         # Populate image title combo box
         self.ui.image_title_combo.clear()
         self.all_imager_names = [entry['imager'].name for
-                                 entry in system.values()]
+                                 entry in self.system.values()]
         for imager_name in self.all_imager_names:
             self.ui.image_title_combo.addItem(imager_name)
 
         # Populate procedures combo box
         self.ui.procedure_combo.clear()
-        for align in alignments.keys():
+        for align in self.alignments.keys():
             self.ui.procedure_combo.addItem(align)
 
         # Do not connect any PVs during init. PYDM connects all needed PVs
@@ -99,7 +75,7 @@ class SkywalkerGui(Display):
                               connect=False)
 
         # Initialize the screen with the first camera in the first procedure
-        system_key = alignments[self.procedure][0][0]
+        system_key = self.alignments[self.procedure][0][0]
         self.select_system_entry(system_key, connect=False)
 
         # When we change the procedure, reinitialize the control portions
