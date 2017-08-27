@@ -172,6 +172,9 @@ class SkywalkerGui(Display):
         abort_pressed = ui.abort_button.clicked
         abort_pressed.connect(self.on_abort_button)
 
+        slits_pressed = ui.slit_run_button.clicked
+        slits_pressed.connect(self.on_slits_button)
+
         # Setup the on-screen logger
         self.setup_gui_logger()
 
