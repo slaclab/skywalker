@@ -25,6 +25,10 @@ config = homs_system()
 
 
 class SkywalkerGui(Display):
+    """
+    Display class to define all the logic for the skywalker alignment gui.
+    Refers to widgets in the .ui file.
+    """
     # System mapping of associated devices
     system = dict(
         m1h=dict(mirror=config['m1h'],
@@ -48,49 +52,94 @@ class SkywalkerGui(Display):
 
     def __init__(self, parent=None, args=None):
         super().__init__(parent=parent, args=args)
+        ui = self.ui
 
-        self.goal_cache = {}
-        self.beam_x_stats = None
-        self.imager = None
-
-        # Populate image title combo box
-        self.ui.image_title_combo.clear()
+        # Load config into the combo box objects
+        ui.image_title_combo.clear()
+        ui.procedure_combo.clear()
         self.all_imager_names = [entry['imager'].name for
                                  entry in self.system.values()]
         for imager_name in self.all_imager_names:
-            self.ui.image_title_combo.addItem(imager_name)
-
-        # Populate procedures combo box
-        self.ui.procedure_combo.clear()
+            ui.image_title_combo.addItem(imager_name)
         for align in self.alignments.keys():
-            self.ui.procedure_combo.addItem(align)
+            ui.procedure_combo.addItem(align)
 
-        # Do not connect any PVs during init. PYDM connects all needed PVs
-        # right after init, so if we also connect them then we've done it
-        # twice! This can cause problems with waveform cpu usage and display
-        # glitches.
+        # Pick out some initial parameters from system and alignment dicts
+        first_alignment_name = [self.alignments.keys()][0]
+        first_system_key = [self.alignments.values()][0][0][0]
+        first_set = self.system[first_system_key]
+        first_imager = first_set['imager']
+        first_slit = first_set['slits']
+        first_rotation = first_set.get('rotation', 0)
 
-        # Initialize the screen with whatever the first procedure is
-        self.select_procedure(self.ui.procedure_combo.currentText(),
-                              connect=False)
+        # self.procedure is used in macros such as self.imagers
+        self.procedure = first_alignment_name
 
-        # Initialize the screen with the first camera in the first procedure
-        system_key = self.alignments[self.procedure][0][0]
-        self.select_system_entry(system_key, connect=False)
+        # Initialize slit readback
+        self.slit_group = ObjWidgetGroup([ui.slit_x_width,
+                                          ui.slit_y_width],
+                                         ['xwidth.readback',
+                                          'ywidth.readback'],
+                                         first_slit, label=first_slit.name)
 
-        # When we change the procedure, reinitialize the control portions
-        procedure_changed = self.ui.procedure_combo.activated[str]
+        # Initialize mirror control
+        self.mirror_groups = []
+        mirror_labels = self.get_widget_set()
+        mirror_rbvs = self.get_widget_set()
+        mirror_vals = self.get_widget_set()
+        mirror_circles = self.get_widget_set()
+        for label, rbv, val, circle, mirror in zip(mirror_labels,
+                                                   mirror_rbvs,
+                                                   mirror_vals,
+                                                   mirror_circles,
+                                                   self.mirrors_padded):
+            mirror_group = ObjWidgetGroup([rbv, val, circle],
+                                          ['pitch.user_readback',
+                                           'pitch.user_setpoint',
+                                           'pitch.motor_done_move'],
+                                          mirror, label=mirror.name)
+            if mirror is None:
+                mirror_group.hide()
+            self.mirror_groups.append(mirror_group)
+
+        # Initialize the goal entry fields
+        self.goal_cache = {}
+        self.goals_groups = []
+        goal_labels = self.get_widget_set('goal_name')
+        goal_edits = self.get_widget_set('goal_value')
+        goal_slits = self.get_widget_set('slit_check')
+        for label, edit, slit, img in zip(goal_labels, goal_edits,
+                                          goal_slits, self.imagers_padded):
+            if img is None:
+                name = None
+            else:
+                name = img.name
+            validator = QDoubleValidator(0, 5000, 3)
+            goal_group = ValueWidgetGroup(edit, label, checkbox=slit,
+                                          name=name, cache=self.goal_cache,
+                                          validator=validator)
+            if img is None:
+                goal_group.hide()
+            self.goals_groups.append(goal_group)
+
+        # Initialize image and centroids. Needs goals defined first.
+        self.image = ImgObjWidget(ui.image, first_imager, ui.beam_x_value,
+                                  ui.beam_y_value, ui.beam_x_delta,
+                                  ui.beam_y_delta, ui.readback_imager_title,
+                                  self, first_rotation)
+
+        # Connect relevant signals and slots
+        procedure_changed = ui.procedure_combo.activated[str]
         procedure_changed.connect(self.on_procedure_combo_changed)
 
-        # When we change the active imager, swap just the imager
-        imager_changed = self.ui.image_title_combo.activated[str]
+        imager_changed = ui.image_title_combo.activated[str]
         imager_changed.connect(self.on_image_combo_changed)
 
-        # When we change the goals, update the deltas
         for goal_value in self.get_widget_set('goal_value'):
             goal_changed = goal_value.editingFinished
             goal_changed.connect(self.on_goal_changed)
 
+        # Setup the on-screen logger
         self.setup_gui_logger()
 
     def setup_gui_logger(self):
@@ -108,34 +157,98 @@ class SkywalkerGui(Display):
 
     @pyqtSlot(str)
     def on_image_combo_changed(self, imager_name):
-        self.select_imager(imager_name)
+        """
+        Slot for the combo box above the image feed. This swaps out the imager,
+        centroid, and slit readbacks.
+
+        Parameters
+        ----------
+        imager_name: str
+            name of the imager to activate
+        """
+        logger.info('Selecting imager %s', imager_name)
+        for k, v in self.system.items():
+            if imager_name == v['imager'].name:
+                image_obj = v['imager']
+                slits_obj = v.get('slits')
+        self.image.change_obj(image_obj)
+        if slits_obj is not None:
+            self.slit_group.change_obj(slits_obj)
 
     @pyqtSlot(str)
     def on_procedure_combo_changed(self, procedure_name):
-        self.select_procedure(procedure_name)
+        """
+        Slot for the main procedure combo box. This swaps out the mirror and
+        goals sections to match the chosen procedure, and determines what
+        happens when we press go.
+
+        Parameters
+        ----------
+        procedure_name: str
+            name of the procedure to activate
+        """
+        logger.info('Selecting procedure %s', procedure_name)
+        self.procedure = procedure_name
+        for obj, widgets in zip(self.mirrors_padded, self.mirror_groups):
+            if obj is None:
+                widgets.hide()
+            else:
+                widgets.change_obj(obj)
+                widgets.show()
+        for obj, widgets in zip(self.imagers_padded, self.goals_groups):
+            widgets.save_value()
+            widgets.clear()
+        for obj, widgets in zip(self.imagers_padded, self.goals_groups):
+            if obj is None:
+                widgets.hide()
+            else:
+                widgets.setup(name=obj.name)
+                widgets.show()
 
     @pyqtSlot()
     def on_goal_changed(self):
-        self.update_beam_delta()
+        """
+        Slot for when the user picks a new goal. Updates the goal delta so it
+        reflects the new chosen value.
+        """
+        self.image.update_deltas()
 
     @pyqtSlot()
     def on_start_button(self):
+        """
+        Slot for the start button. This begins from an idle state or resumes
+        from a paused state.
+        """
         pass
 
     @pyqtSlot()
     def on_pause_button(self):
+        """
+        Slot for the pause button. This brings us from the running state to the
+        paused state.
+        """
         pass
 
     @pyqtSlot()
     def on_abort_button(self):
+        """
+        Slot for the abort button. This brings us from any state to the idle
+        state.
+        """
         pass
 
     @pyqtSlot()
     def on_slits_button(self):
+        """
+        Slot for the slits procedure. This checks the slit fiducialization.
+        """
         pass
 
     @property
     def active_system(self):
+        """
+        List of system keys that are part of the active procedure.
+        """
         active_system = []
         for part in self.alignments[self.procedure]:
             active_system.extend(part)
@@ -143,29 +256,60 @@ class SkywalkerGui(Display):
 
     @property
     def mirrors(self):
+        """
+        List of active mirror objects.
+        """
         return [self.system[act]['mirror'] for act in self.active_system]
 
     @property
     def imagers(self):
+        """
+        List of active imager objects.
+        """
         return [self.system[act]['imager'] for act in self.active_system]
 
     @property
     def slits(self):
+        """
+        List of active slits objects.
+        """
         return [self.system[act].get('slits') for act in self.active_system]
 
     @property
     def goals(self):
-        vals = []
-        for line_edit in self.get_widget_set('goal_value'):
-            goal = line_edit.text()
-            try:
-                goal = float(goal)
-            except:
-                goal = None
-            vals.append(goal)
-        return vals
+        """
+        List of goals in the user entry boxes, or None for empty or invalid
+        goals.
+        """
+        return [goal.value for goal in self.goals_groups]
+
+    @property
+    def goal(self):
+        """
+        The goal associated with the visible imager, or None if the visible
+        imager is not part of the active procedure.
+        """
+        if self.procedure_index is None:
+            return None
+        else:
+            return self.goals[self.procedure_index]
+
+    @property
+    def procedure_index(self):
+        """
+        Goal index of the active imager, or None if the visible imager is not
+        part of the active procedure.
+        """
+        try:
+            return self.imagers_padded.index(self.image.obj)
+        except ValueError:
+            return None
 
     def none_pad(self, obj_list):
+        """
+        Helper function to extend a list with 'None' objects until it's the
+        length of MAX_MIRRORS.
+        """
         padded = []
         padded.extend(obj_list)
         while len(padded) < MAX_MIRRORS:
@@ -184,233 +328,29 @@ class SkywalkerGui(Display):
     def slits_padded(self):
         return self.none_pad(self.slits)
 
-    @pyqtSlot(str)
-    def select_procedure(self, procedure, connect=True):
-        """
-        Change on-screen labels and pv connections to match the current
-        procedure.
-        """
-        logger.info('Selecting procedure %s', procedure)
-        # Set the procedure member that will be used elsewhere
-        self.procedure = procedure
-
-        # Set text, pvs in the Goals and Mirrors areas
-        goal_labels = self.get_widget_set('goal_name')
-        goal_line_edits = self.get_widget_set('goal_value')
-        slit_checkboxes = self.get_widget_set('slit_check')
-        mirror_labels = self.get_widget_set('mirror_name')
-        mirror_circles = self.get_widget_set('mirror_circle')
-        mirror_rbvs = self.get_widget_set('mirror_readback')
-        mirror_sets = self.get_widget_set('mirror_setpos')
-
-        my_zip = zip(self.mirrors_padded,
-                     self.imagers_padded,
-                     self.slits_padded,
-                     goal_labels,
-                     goal_line_edits,
-                     slit_checkboxes,
-                     mirror_labels,
-                     mirror_circles,
-                     mirror_rbvs,
-                     mirror_sets)
-        for (mirr, img, slit, glabel, gedit, scheck,
-             mlabel, mcircle, mrbv, mset) in my_zip:
-            # Cache goal values and clear
-            old_goal = str(gedit.text())
-            if len(old_goal) > 0:
-                self.goal_cache[str(glabel.text())] = float(old_goal)
-            gedit.clear()
-
-            # Reset all checkboxes and kill pv connections
-            scheck.setChecked(False)
-            if connect:
-                clear_pydm_connection(mcircle)
-                clear_pydm_connection(mrbv)
-                clear_pydm_connection(mset)
-
-            # If no imager, we hide the unneeded widgets
-            if img is None:
-                glabel.hide()
-                gedit.hide()
-                scheck.hide()
-                mlabel.hide()
-                mcircle.hide()
-                mrbv.hide()
-                mset.hide()
-
-            # Otherwise, make sure the widgets are visible and set parameters
-            else:
-                # Basic labels for goals, mirrors, and slits
-                glabel.clear()
-                glabel.setText(img.name)
-                mlabel.setText(mirr.name)
-                if slit is None:
-                    scheck.hide()
-                else:
-                    scheck.setText(slit.name)
-                    scheck.show()
-
-                # Set up input validation and check cache for value
-                # TODO different range for different imager
-                gedit.setValidator(QDoubleValidator(0., 1000., 3))
-                cached_goal = self.goal_cache.get(img.name)
-                if cached_goal is None:
-                    gedit.clear()
-                else:
-                    gedit.setText(str(cached_goal))
-
-                # Connect mirror PVs
-                mcircle.channel = 'ca://' + mirr.pitch.motor_done_move.pvname
-                # mrbv.channel = 'ca://' + mirr.pitch.user_readback.pvname
-                mrbv.setChannel('ca://' + mirr.pitch.user_readback.pvname)
-                mset.channel = 'ca://' + mirr.pitch.user_setpoint.pvname
-
-                if connect:
-                    create_pydm_connection(mcircle)
-                    create_pydm_connection(mrbv)
-                    create_pydm_connection(mset)
-
-                # Make sure things are visible
-                glabel.show()
-                gedit.show()
-                mlabel.show()
-                mcircle.show()
-                mrbv.show()
-                mset.show()
-        # If we already had set up an imager, update beam delta with new goals
-        if self.imager is not None:
-            self.update_beam_delta()
-
     def get_widget_set(self, name, num=MAX_MIRRORS):
+        """
+        Widgets that come in sets of count MAX_MIRRORS are named carefully so
+        we can use this macro to grab related widgets.
+
+        Parameters
+        ----------
+        name: str
+            Base name of widget set e.g. 'name'
+
+        num: int, optional
+            Number of widgets to return
+
+        Returns
+        -------
+        widget_set: list
+            List of widgets e.g. 'name_1', 'name_2', 'name_3'...
+        """
         widgets = []
         for n in range(1, num + 1):
             widget = getattr(self.ui, name + "_" + str(n))
             widgets.append(widget)
         return widgets
-
-    @pyqtSlot(str)
-    def select_imager(self, imager_name):
-        logger.info('Selecting imager %s', imager_name)
-        for k, v in self.system.items():
-            if imager_name == v['imager'].name:
-                return self.select_system_entry(k)
-
-    @pyqtSlot(str)
-    def select_system_entry(self, system_key, connect=True):
-        """
-        Change on-screen information and displayed image to correspond to the
-        selected mirror-imager-slit trio.
-        """
-        system_entry = self.system[system_key]
-        imager = system_entry['imager']
-        slits = system_entry.get('slits')
-        rotation = system_entry.get('rotation', 0)
-        self.imager = imager
-        self.slit = slits
-        self.rotation = rotation
-        try:
-            self.procedure_index = self.imagers.index(imager)
-        except ValueError:
-            # This means we picked an imager not in this procedure
-            # This is allowed, but it means there is no goal delta!
-            self.procedure_index = None
-
-        # Make sure the combobox matches the image
-        index = self.all_imager_names.index(imager.name)
-        self.ui.image_title_combo.setCurrentIndex(index)
-        self.ui.readback_imager_title.setText(imager.name)
-
-        # Some cleanup
-        if self.beam_x_stats is not None:
-            self.beam_x_stats.clear_sub(self.update_beam_pos)
-
-        # Set up the imager
-        self.initialize_image(imager, connect=connect)
-
-        # Centroid stuff
-        stats2 = imager.detector.stats2
-        self.beam_x_stats = stats2.centroid.x
-        self.beam_y_stats = stats2.centroid.y
-
-        self.beam_x_stats.subscribe(self.update_beam_pos)
-
-        # Slits stuff
-        self.ui.readback_slits_title.clear()
-        slit_x_widget = self.ui.slit_x_width
-        slit_y_widget = self.ui.slit_y_width
-        if connect:
-            clear_pydm_connection(slit_x_widget)
-            clear_pydm_connection(slit_y_widget)
-        if slits is not None:
-            slit_x_name = slits.xwidth.readback.pvname
-            slit_y_name = slits.ywidth.readback.pvname
-            self.ui.readback_slits_title.setText(slits.name)
-            # slit_x_widget.channel = 'ca://' + slit_x_name
-            slit_x_widget.setChannel('ca://' + slit_x_name)
-            # slit_y_widget.channel = 'ca://' + slit_y_name
-            slit_y_widget.setChannel('ca://' + slit_y_name)
-            if connect:
-                create_pydm_connection(slit_x_widget)
-                create_pydm_connection(slit_y_widget)
-
-    def initialize_image(self, imager, connect=True):
-        # Disconnect image PVs
-        if connect:
-            clear_pydm_connection(self.ui.image)
-        self.ui.image.resetImageChannel()
-        self.ui.image.resetWidthChannel()
-
-        # Handle rotation
-        self.ui.image.getImageItem().setRotation(self.rotation)
-        size_x = imager.detector.cam.array_size.array_size_x.value
-        size_y = imager.detector.cam.array_size.array_size_y.value
-        pix_x, pix_y = rotate(size_x, size_y, self.rotation)
-        self.pix_x = int(round(abs(pix_x)))
-        self.pix_y = int(round(abs(pix_y)))
-
-        # Connect image PVs
-        image2 = imager.detector.image2
-        self.ui.image.setWidthChannel('ca://' + image2.width.pvname)
-        self.ui.image.setImageChannel('ca://' + image2.array_data.pvname)
-        if connect:
-            create_pydm_connection(self.ui.image)
-
-        # TODO figure out how image sizing really works
-        self.ui.image.resize(self.pix_x, self.pix_y)
-
-    @pyqtSlot()
-    def update_beam_pos(self, *args, **kwargs):
-        centroid_x = self.beam_x_stats.value
-        centroid_y = self.beam_y_stats.value
-
-        rotation = -self.rotation
-        xpos, ypos = rotate(centroid_x, centroid_y, rotation)
-
-        if xpos < 0:
-            xpos += self.pix_x
-        if ypos < 0:
-            ypos += self.pix_y
-
-        self.xpos = xpos
-        self.ypos = ypos
-
-        self.ui.beam_x_value.setText(str(xpos))
-        self.ui.beam_y_value.setText(str(ypos))
-
-        self.update_beam_delta()
-
-    @pyqtSlot()
-    def update_beam_delta(self, *args, **kwargs):
-        if self.procedure_index is None:
-            self.ui.beam_x_delta.clear()
-        else:
-            goal = self.goals[self.procedure_index]
-            if goal is None:
-                self.ui.beam_x_delta.clear()
-            else:
-                self.ui.beam_x_delta.setText(str(self.xpos - goal))
-        # No y delta yet, there isn't a y goal pos!
-        self.ui.beam_y_delta.clear()
 
     def ui_filename(self):
         return 'skywalker_gui.ui'
@@ -418,6 +358,8 @@ class SkywalkerGui(Display):
     def ui_filepath(self):
         return path.join(path.dirname(path.realpath(__file__)),
                          self.ui_filename())
+
+intelclass = SkywalkerGui # NOQA
 
 
 class GuiHandler(logging.Handler):
@@ -444,21 +386,42 @@ class BaseWidgetGroup:
     A group of widgets that are part of a set with a single label.
     """
     def __init__(self, widgets, label=None, name=None, **kwargs):
+        """
+        Parameters
+        ----------
+        widgets: list
+            list of widgets in the group
+
+        label: QLabel, optional
+            A special widget that acts as the label for the group
+
+        name: str, optional
+            The label text
+        """
         self.widgets = widgets
         self.label = label
         self.setup(name=name, **kwargs)
 
     def setup(self, name=None, **kwargs):
+        """
+        Do basic widget setup. For Base, this is just changing the label text.
+        """
         if None not in (self.label, name):
             self.label.setText(name)
 
     def hide(self):
+        """
+        Hide all widgets in group.
+        """
         for widget in self.widgets:
             widget.hide()
         if self.label is not None:
             self.label.hide()
 
     def show(self):
+        """
+        Show all widgets in group.
+        """
         for widget in self.widgets:
             widget.show()
         if self.label is not None:
@@ -471,6 +434,21 @@ class ValueWidgetGroup(BaseWidgetGroup):
     """
     def __init__(self, line_edit, label, checkbox=None, name=None, cache=None,
                  validator=None):
+        """
+        Parameters
+        ----------
+        line_edit: QLineEdit
+            The user-editable value field.
+
+        checkbox: QCheckbox, optional
+            Optional checkbox widget associated with the value.
+
+        cache: dict, optional
+            For widgets that need to save/share values
+
+        validator: QDoubleValidator, optional
+            Make sure the text is a double
+        """
         widgets = [line_edit]
         if checkbox is not None:
             widgets.append(checkbox)
@@ -491,18 +469,38 @@ class ValueWidgetGroup(BaseWidgetGroup):
         super().__init__(widgets, label=label, name=name)
 
     def setup(self, name=None, **kwargs):
-        old_name = self.label.text()
-        old_value = self.value
-        if None not in (old_name, old_value):
-            self.cache[old_name] = old_value
+        """
+        Put name in the checkbox too
+        """
         super().setup(name=name, **kwargs)
-        cache_value = self.cache.get(name)
-        if cache_value is not None:
-            self.value = cache_value
         if None not in (self.checkbox, name):
             self.checkbox.setText(name)
         if self.checkbox is not None:
             self.checkbox.setChecked(False)
+        self.load_value(name)
+
+    def save_value(self):
+        """
+        Stash current value in self.cache
+        """
+        old_name = self.label.text()
+        old_value = self.value
+        if None not in (old_name, old_value):
+            self.cache[old_name] = old_value
+
+    def load_value(self, name):
+        """
+        Grab current value from self.cache
+        """
+        cache_value = self.cache.get(name)
+        if cache_value is not None:
+            self.value = cache_value
+
+    def clear(self):
+        """
+        Reset the value
+        """
+        self.line_edit.clear()
 
     @property
     def value(self):
@@ -531,30 +529,56 @@ class PydmWidgetGroup(BaseWidgetGroup):
     protocol = 'ca://'
 
     def __init__(self, widgets, pvnames, label=None, name=None, **kwargs):
+        """
+        Parameters
+        ----------
+        pvnames: list
+            pvs to assign to the widgets
+        """
         super().__init__(self, widgets, label=label, name=name,
                          pvnames=pvnames, **kwargs)
 
     def setup(self, *, pvnames, name=None, **kwargs):
+        """
+        In addition to base setup, assign pv names.
+        """
         super().setup(name=name, **kwargs)
+        if pvnames is None:
+            pvnames = [None] * len(self.widgets)
         for widget, pvname in zip(self.widgets, pvnames):
-            chan = self.protocol + pvname
+            if pvname is None:
+                chan = ''
+            else:
+                chan = self.protocol + pvname
             try:
                 widget.setChannel(chan)
             except:
                 widget.channel = chan
 
     def change_pvs(self, pvnames, name=None, **kwargs):
+        """
+        Swap active pv names and manage connections
+        """
         self.clear_connections()
         self.setup(pvnames, name=name, **kwargs)
         self.create_connections()
 
     def clear_connections(self):
+        """
+        Tell pydm to drop own pv connections.
+        """
+        QApp = QCoreApplication.instance()
         for widget in self.widgets:
-            clear_pydm_connection(widget)
+            QApp.close_widget_connections(widget)
+            widget._channels = None
 
     def create_connections(self):
+        """
+        Tell pydm to establish own pv connections.
+        """
+        QApp = QCoreApplication.instance()
         for widget in self.widgets:
-            create_pydm_connection(widget)
+            QApp.establish_widget_connections(widget)
 
 
 class ObjWidgetGroup(PydmWidgetGroup):
@@ -564,16 +588,41 @@ class ObjWidgetGroup(PydmWidgetGroup):
     same.
     """
     def __init__(self, widgets, attrs, obj, label=None, **kwargs):
+        """
+        Parameters
+        ----------
+        attrs: list
+            list of attribute strings to pull from obj e.g. 'centroid.x'
+
+        obj: object
+            Any object that holds ophyd EpicsSignal objects that have pvname
+            fields that we can use to send pvname info to pydm
+        """
         self.attrs = attrs
+        self.obj = obj
         pvnames = self.get_pvnames(obj)
         super().__init__(widgets, pvnames, label=label, name=obj.name,
                          **kwargs)
 
     def change_obj(self, obj, **kwargs):
+        """
+        Swap the active object and fix connections
+
+        Parameters
+        ----------
+        obj: object
+            The new object
+        """
+        self.obj = obj
         pvnames = self.get_pvnames(obj)
         self.change_pvs(pvnames, name=obj.name, **kwargs)
 
     def get_pvnames(self, obj):
+        """
+        Given an object, return the pvnames based on self.attrs
+        """
+        if obj is None:
+            return None
         pvnames = []
         for attr in self.attrs:
             sig = self.nested_getattr(obj, attr)
@@ -581,6 +630,9 @@ class ObjWidgetGroup(PydmWidgetGroup):
         return pvnames
 
     def nested_getattr(self, obj, attr):
+        """
+        Do a getattr more than one level deep, splitting on '.'
+        """
         steps = attr.split('.')
         for step in steps:
             obj = getattr(obj, step)
@@ -590,12 +642,20 @@ class ObjWidgetGroup(PydmWidgetGroup):
 class ImgObjWidget(ObjWidgetGroup):
     """
     Macros to set up the image widget channels from opyhd areadetector obj.
-    Not really a group but this was convenient.
+    This also includes all of the centroid stuff.
     """
-    def __init__(self, img_widget, img_obj, rotation=0):
+    def __init__(self, img_widget, img_obj, cent_x_widget, cent_y_widget,
+                 delta_x_widget, delta_y_widget, label, goals_source,
+                 rotation=0):
+        self.cent_x_widget = cent_x_widget
+        self.cent_y_widget = cent_y_widget
+        self.delta_x_widget = delta_x_widget
+        self.delta_y_widget = delta_y_widget
+        self.goals_source = goals_source
         attrs = ['detector.image2.width',
                  'detector.image2.array_data']
-        super().__init__([img_widget], attrs, img_obj, rotation=rotation)
+        super().__init__([img_widget], attrs, img_obj, label=label,
+                         rotation=rotation)
 
     def setup(self, *, pvnames, rotation=0, **kwargs):
         self.rotation = rotation
@@ -607,10 +667,39 @@ class ImgObjWidget(ObjWidgetGroup):
         img_widget.resetWidthChannel()
         img_widget.setWidthChannel(self.protocol + width_pv)
         img_widget.setImageChannel(self.protocol + image_pv)
+        centroid = self.obj.detector.stats2.centroid
+        self.beam_x_stats = centroid.x
+        self.beam_y_stats = centroid.y
+        self.beam_x_stats.subscribe(self.update_centroid)
+        self.update_centroid()
+
+    def update_centroid(self):
+        centroid_x = self.beam_x_stats.value
+        centroid_y = self.beam_y_stats.value
+        rotation = -self.rotation
+        xpos, ypos = self.rotate(centroid_x, centroid_y, rotation)
+        if xpos < 0:
+            xpos += self.size_x
+        if ypos < 0:
+            ypos += self.size_y
+        self.xpos = xpos
+        self.ypos = ypos
+        self.cent_x_widget.setText(str(xpos))
+        self.cent_y_widget.setText(str(ypos))
+        self.update_deltas()
+
+    def update_deltas(self):
+        goal = self.goals_source.goal
+        if goal is None:
+            self.delta_x_widget.clear()
+        else:
+            self.delta_x_widget.setText(str(self.xpos - goal))
+        self.delta_y_widget.clear()
 
     @property
     def size(self):
-        rot_x, rot_y = rotate(self.raw_size_x, self.raw_size_y, self.rotation)
+        rot_x, rot_y = self.rotate(self.raw_size_x, self.raw_size_y,
+                                   self.rotation)
         return (int(round(abs(rot_x))), int(round(abs(rot_y))))
 
     @property
@@ -629,33 +718,16 @@ class ImgObjWidget(ObjWidgetGroup):
     def raw_size_y(self):
         return self.obj.detector.cam.array_size.array_size_y.value
 
+    def to_rad(self, deg):
+        return deg*pi/180
 
-def clear_pydm_connection(widget):
-    QApp = QCoreApplication.instance()
-    QApp.close_widget_connections(widget)
-    widget._channels = None
+    def sind(self, deg):
+        return sin(self.to_rad(deg))
 
+    def cosd(self, deg):
+        return cos(self.to_rad(deg))
 
-def create_pydm_connection(widget):
-    QApp = QCoreApplication.instance()
-    QApp.establish_widget_connections(widget)
-
-
-def to_rad(deg):
-    return deg*pi/180
-
-
-def sind(deg):
-    return sin(to_rad(deg))
-
-
-def cosd(deg):
-    return cos(to_rad(deg))
-
-
-def rotate(x, y, deg):
-    x2 = x * cosd(deg) - y * sind(deg)
-    y2 = x * sind(deg) + y * cosd(deg)
-    return (x2, y2)
-
-intelclass = SkywalkerGui # NOQA
+    def rotate(self, x, y, deg):
+        x2 = x * self.cosd(deg) - y * self.sind(deg)
+        y2 = x * self.sind(deg) + y * self.cosd(deg)
+        return (x2, y2)
