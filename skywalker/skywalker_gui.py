@@ -258,22 +258,24 @@ class SkywalkerGui(Display):
         from a paused state.
         """
         if self.RE.state == 'idle':
+            logger.info("Starting %s procedure", self.procedure)
             try:
                 # TODO Skywalker here
                 def plan(n):
                     for i in range(n):
-                        logger.info("Fake align pt {}".format(i + 1))
+                        logger.info("Fake align pt %s", i + 1)
                         yield from checkpoint()
                         yield from sleep(2)
                     logger.info("Fake align done")
                 self.RE(plan(10))
             except:
-                logger.exception("Error in plan")
+                logger.exception("Error in procedure.")
         elif self.RE.state == 'paused':
+            logger.info("Resuming procedure.")
             try:
                 self.RE.resume()
             except:
-                logger.exception("Error on resume")
+                logger.exception("Error in procedure.")
 
     @pyqtSlot()
     def on_pause_button(self):
@@ -282,10 +284,11 @@ class SkywalkerGui(Display):
         paused state.
         """
         if self.RE.state == 'running':
+            logger.info("Pausing procedure.")
             try:
                 self.RE.request_pause()
             except:
-                logger.exception("Error on pause")
+                logger.exception("Error on pause.")
 
     @pyqtSlot()
     def on_abort_button(self):
@@ -294,10 +297,11 @@ class SkywalkerGui(Display):
         state.
         """
         if self.RE.state != 'idle':
+            logger.info("Aborting procedure.")
             try:
                 self.RE.abort()
             except:
-                logger.exception("Error on abort")
+                logger.exception("Error on abort.")
 
     @pyqtSlot()
     def on_slits_button(self):
