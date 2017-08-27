@@ -5,6 +5,8 @@ from os import path
 from math import sin, cos, pi
 
 from bluesky import RunEngine
+from bluesky.utils import install_qt_kicker
+from bluesky.plans import sleep, checkpoint
 
 from pydm import Display
 from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication, QPoint
@@ -137,6 +139,7 @@ class SkywalkerGui(Display):
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
         self.RE = lcls_RE()
+        install_qt_kicker()
 
         # Some hax to keep the state string updated
         # There is probably a better way to do this
@@ -251,8 +254,23 @@ class SkywalkerGui(Display):
         Slot for the start button. This begins from an idle state or resumes
         from a paused state.
         """
-        if self.RE.state != 'running':
-            self.RE.state = 'running'
+        if self.RE.state == 'idle':
+            try:
+                # TODO Skywalker here
+                def plan(n):
+                    for i in range(n):
+                        logger.info("Fake align pt {}".format(i + 1))
+                        yield from checkpoint()
+                        yield from sleep(2)
+                    logger.info("Fake align done")
+                self.RE(plan(10))
+            except:
+                logger.exception("Error in plan")
+        elif self.RE.state == 'paused':
+            try:
+                self.RE.resume()
+            except:
+                logger.exception("Error on resume")
 
     @pyqtSlot()
     def on_pause_button(self):
@@ -261,7 +279,10 @@ class SkywalkerGui(Display):
         paused state.
         """
         if self.RE.state == 'running':
-            self.RE.state = 'paused'
+            try:
+                self.RE.request_pause()
+            except:
+                logger.exception("Error on pause")
 
     @pyqtSlot()
     def on_abort_button(self):
@@ -270,7 +291,10 @@ class SkywalkerGui(Display):
         state.
         """
         if self.RE.state != 'idle':
-            self.RE.state = 'idle'
+            try:
+                self.RE.abort()
+            except:
+                logger.exception("Error on abort")
 
     @pyqtSlot()
     def on_slits_button(self):
