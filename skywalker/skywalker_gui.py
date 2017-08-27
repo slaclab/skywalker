@@ -65,39 +65,41 @@ class SkywalkerGui(Display):
             ui.procedure_combo.addItem(align)
 
         # Pick out some initial parameters from system and alignment dicts
-        first_alignment_name = [self.alignments.keys()][0]
-        first_system_key = [self.alignments.values()][0][0][0]
+        first_alignment_name = list(self.alignments.keys())[0]
+        first_system_key = list(self.alignments.values())[0][0][0]
         first_set = self.system[first_system_key]
         first_imager = first_set['imager']
         first_slit = first_set['slits']
         first_rotation = first_set.get('rotation', 0)
 
-        # self.procedure is used in macros such as self.imagers
+        # self.procedure and self.image_obj keep track of the gui state
         self.procedure = first_alignment_name
+        self.image_obj = first_imager
 
         # Initialize slit readback
         self.slit_group = ObjWidgetGroup([ui.slit_x_width,
                                           ui.slit_y_width],
                                          ['xwidth.readback',
                                           'ywidth.readback'],
-                                         first_slit, label=first_slit.name)
+                                         first_slit,
+                                         label=ui.readback_slits_title)
 
         # Initialize mirror control
         self.mirror_groups = []
-        mirror_labels = self.get_widget_set()
-        mirror_rbvs = self.get_widget_set()
-        mirror_vals = self.get_widget_set()
-        mirror_circles = self.get_widget_set()
+        mirror_labels = self.get_widget_set('mirror_name')
+        mirror_rbvs = self.get_widget_set('mirror_readback')
+        mirror_vals = self.get_widget_set('mirror_setpos')
+        mirror_circles = self.get_widget_set('mirror_circle')
         for label, rbv, val, circle, mirror in zip(mirror_labels,
                                                    mirror_rbvs,
                                                    mirror_vals,
                                                    mirror_circles,
-                                                   self.mirrors_padded):
+                                                   self.mirrors_padded()):
             mirror_group = ObjWidgetGroup([rbv, val, circle],
                                           ['pitch.user_readback',
                                            'pitch.user_setpoint',
                                            'pitch.motor_done_move'],
-                                          mirror, label=mirror.name)
+                                          mirror, label=label)
             if mirror is None:
                 mirror_group.hide()
             self.mirror_groups.append(mirror_group)
@@ -109,7 +111,7 @@ class SkywalkerGui(Display):
         goal_edits = self.get_widget_set('goal_value')
         goal_slits = self.get_widget_set('slit_check')
         for label, edit, slit, img in zip(goal_labels, goal_edits,
-                                          goal_slits, self.imagers_padded):
+                                          goal_slits, self.imagers_padded()):
             if img is None:
                 name = None
             else:
@@ -123,10 +125,11 @@ class SkywalkerGui(Display):
             self.goals_groups.append(goal_group)
 
         # Initialize image and centroids. Needs goals defined first.
-        self.image = ImgObjWidget(ui.image, first_imager, ui.beam_x_value,
-                                  ui.beam_y_value, ui.beam_x_delta,
-                                  ui.beam_y_delta, ui.readback_imager_title,
-                                  self, first_rotation)
+        self.image_group = ImgObjWidget(ui.image, first_imager,
+                                        ui.beam_x_value, ui.beam_y_value,
+                                        ui.beam_x_delta, ui.beam_y_delta,
+                                        ui.readback_imager_title,
+                                        self, first_rotation)
 
         # Connect relevant signals and slots
         procedure_changed = ui.procedure_combo.activated[str]
@@ -171,7 +174,9 @@ class SkywalkerGui(Display):
             if imager_name == v['imager'].name:
                 image_obj = v['imager']
                 slits_obj = v.get('slits')
-        self.image.change_obj(image_obj)
+                rotation = v.get('rotation', 0)
+        self.image_obj = image_obj
+        self.image_group.change_obj(image_obj, rotation=rotation)
         if slits_obj is not None:
             self.slit_group.change_obj(slits_obj)
 
@@ -189,16 +194,16 @@ class SkywalkerGui(Display):
         """
         logger.info('Selecting procedure %s', procedure_name)
         self.procedure = procedure_name
-        for obj, widgets in zip(self.mirrors_padded, self.mirror_groups):
+        for obj, widgets in zip(self.mirrors_padded(), self.mirror_groups):
             if obj is None:
                 widgets.hide()
             else:
                 widgets.change_obj(obj)
                 widgets.show()
-        for obj, widgets in zip(self.imagers_padded, self.goals_groups):
+        for obj, widgets in zip(self.imagers_padded(), self.goals_groups):
             widgets.save_value()
             widgets.clear()
-        for obj, widgets in zip(self.imagers_padded, self.goals_groups):
+        for obj, widgets in zip(self.imagers_padded(), self.goals_groups):
             if obj is None:
                 widgets.hide()
             else:
@@ -211,7 +216,7 @@ class SkywalkerGui(Display):
         Slot for when the user picks a new goal. Updates the goal delta so it
         reflects the new chosen value.
         """
-        self.image.update_deltas()
+        self.image_group.update_deltas()
 
     @pyqtSlot()
     def on_start_button(self):
@@ -244,7 +249,6 @@ class SkywalkerGui(Display):
         """
         pass
 
-    @property
     def active_system(self):
         """
         List of system keys that are part of the active procedure.
@@ -254,28 +258,24 @@ class SkywalkerGui(Display):
             active_system.extend(part)
         return active_system
 
-    @property
     def mirrors(self):
         """
         List of active mirror objects.
         """
-        return [self.system[act]['mirror'] for act in self.active_system]
+        return [self.system[act]['mirror'] for act in self.active_system()]
 
-    @property
     def imagers(self):
         """
         List of active imager objects.
         """
-        return [self.system[act]['imager'] for act in self.active_system]
+        return [self.system[act]['imager'] for act in self.active_system()]
 
-    @property
     def slits(self):
         """
         List of active slits objects.
         """
-        return [self.system[act].get('slits') for act in self.active_system]
+        return [self.system[act].get('slits') for act in self.active_system()]
 
-    @property
     def goals(self):
         """
         List of goals in the user entry boxes, or None for empty or invalid
@@ -283,25 +283,24 @@ class SkywalkerGui(Display):
         """
         return [goal.value for goal in self.goals_groups]
 
-    @property
     def goal(self):
         """
         The goal associated with the visible imager, or None if the visible
         imager is not part of the active procedure.
         """
-        if self.procedure_index is None:
+        index = self.procedure_index()
+        if index is None:
             return None
         else:
-            return self.goals[self.procedure_index]
+            return self.goals()[index]
 
-    @property
     def procedure_index(self):
         """
         Goal index of the active imager, or None if the visible imager is not
         part of the active procedure.
         """
         try:
-            return self.imagers_padded.index(self.image.obj)
+            return self.imagers_padded().index(self.image_obj)
         except ValueError:
             return None
 
@@ -316,17 +315,14 @@ class SkywalkerGui(Display):
             padded.append(None)
         return padded
 
-    @property
     def mirrors_padded(self):
-        return self.none_pad(self.mirrors)
+        return self.none_pad(self.mirrors())
 
-    @property
     def imagers_padded(self):
-        return self.none_pad(self.imagers)
+        return self.none_pad(self.imagers())
 
-    @property
     def slits_padded(self):
-        return self.none_pad(self.slits)
+        return self.none_pad(self.slits())
 
     def get_widget_set(self, name, num=MAX_MIRRORS):
         """
@@ -535,7 +531,7 @@ class PydmWidgetGroup(BaseWidgetGroup):
         pvnames: list
             pvs to assign to the widgets
         """
-        super().__init__(self, widgets, label=label, name=name,
+        super().__init__(widgets, label=label, name=name,
                          pvnames=pvnames, **kwargs)
 
     def setup(self, *, pvnames, name=None, **kwargs):
@@ -560,7 +556,7 @@ class PydmWidgetGroup(BaseWidgetGroup):
         Swap active pv names and manage connections
         """
         self.clear_connections()
-        self.setup(pvnames, name=name, **kwargs)
+        self.setup(pvnames=pvnames, name=name, **kwargs)
         self.create_connections()
 
     def clear_connections(self):
@@ -600,8 +596,12 @@ class ObjWidgetGroup(PydmWidgetGroup):
         """
         self.attrs = attrs
         self.obj = obj
+        if obj is None:
+            name = None
+        else:
+            name = obj.name
         pvnames = self.get_pvnames(obj)
-        super().__init__(widgets, pvnames, label=label, name=obj.name,
+        super().__init__(widgets, pvnames, label=label, name=name,
                          **kwargs)
 
     def change_obj(self, obj, **kwargs):
@@ -673,7 +673,7 @@ class ImgObjWidget(ObjWidgetGroup):
         self.beam_x_stats.subscribe(self.update_centroid)
         self.update_centroid()
 
-    def update_centroid(self):
+    def update_centroid(self, *args, **kwargs):
         centroid_x = self.beam_x_stats.value
         centroid_y = self.beam_y_stats.value
         rotation = -self.rotation
@@ -689,7 +689,7 @@ class ImgObjWidget(ObjWidgetGroup):
         self.update_deltas()
 
     def update_deltas(self):
-        goal = self.goals_source.goal
+        goal = self.goals_source.goal()
         if goal is None:
             self.delta_x_widget.clear()
         else:
