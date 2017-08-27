@@ -4,11 +4,14 @@ import logging
 from os import path
 from math import sin, cos, pi
 
-from pswalker.config import homs_system
+from bluesky import RunEngine
 
 from pydm import Display
 from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication, QPoint
 from pydm.PyQt.QtGui import QDoubleValidator
+
+from pswalker.config import homs_system
+from pswalker.skywalker import lcls_RE
 
 logging.basicConfig(level=logging.DEBUG,
                     format=('%(asctime)s '
@@ -131,6 +134,21 @@ class SkywalkerGui(Display):
                                         ui.readback_imager_title,
                                         self, first_rotation)
 
+        # Create the RunEngine that will be used in the alignments.
+        # This gives us the ability to pause, etc.
+        self.RE = lcls_RE()
+
+        # Some hax to keep the state string updated
+        # There is probably a better way to do this
+        # This might break on some package update
+        self.RE.state  # Yes this matters
+        old_set = RunEngine.state._memory[self.RE].set_
+        def new_set(state):  # NOQA
+            old_set(state)
+            txt = " Status: " + state.capitalize()
+            self.ui.status_label.setText(txt)
+        RunEngine.state._memory[self.RE].set_ = new_set
+
         # Connect relevant signals and slots
         procedure_changed = ui.procedure_combo.activated[str]
         procedure_changed.connect(self.on_procedure_combo_changed)
@@ -141,6 +159,15 @@ class SkywalkerGui(Display):
         for goal_value in self.get_widget_set('goal_value'):
             goal_changed = goal_value.editingFinished
             goal_changed.connect(self.on_goal_changed)
+
+        start_pressed = ui.start_button.clicked
+        start_pressed.connect(self.on_start_button)
+
+        pause_pressed = ui.pause_button.clicked
+        pause_pressed.connect(self.on_pause_button)
+
+        abort_pressed = ui.abort_button.clicked
+        abort_pressed.connect(self.on_abort_button)
 
         # Setup the on-screen logger
         self.setup_gui_logger()
@@ -224,7 +251,8 @@ class SkywalkerGui(Display):
         Slot for the start button. This begins from an idle state or resumes
         from a paused state.
         """
-        pass
+        if self.RE.state != 'running':
+            self.RE.state = 'running'
 
     @pyqtSlot()
     def on_pause_button(self):
@@ -232,7 +260,8 @@ class SkywalkerGui(Display):
         Slot for the pause button. This brings us from the running state to the
         paused state.
         """
-        pass
+        if self.RE.state == 'running':
+            self.RE.state = 'paused'
 
     @pyqtSlot()
     def on_abort_button(self):
@@ -240,7 +269,8 @@ class SkywalkerGui(Display):
         Slot for the abort button. This brings us from any state to the idle
         state.
         """
-        pass
+        if self.RE.state != 'idle':
+            self.RE.state = 'idle'
 
     @pyqtSlot()
     def on_slits_button(self):
