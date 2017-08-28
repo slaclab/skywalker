@@ -314,7 +314,33 @@ class SkywalkerGui(Display):
         """
         Slot for the slits procedure. This checks the slit fiducialization.
         """
-        pass
+        logger.info('Starting slit check process.')
+        image_to_check = []
+        slits_to_check = []
+
+        # First, check the slit checkboxes.
+        for img_obj, slit_obj, goal_group in zip(self.imagers_padded(),
+                                                 self.slits_padded(),
+                                                 self.goals_groups):
+            if slit_obj is not None and goal_group.is_checked:
+                slits_to_check.append(slit_obj)
+        if not slits_to_check:
+            logger.info('No valid slits selected!')
+            return
+        logger.info('Checking the following slits: %s',
+                    [slit.name for slit in slits_to_check])
+
+        # TODO use real plan
+        def plan(imager, slit):
+            yield from checkpoint()
+            logger.info('get point with %s and %s', imager, slit)
+        for img, slit in zip(image_to_check, slits_to_check):
+            self.RE(plan(img, slit))
+
+        if self.ui.slit_fill_check.isChecked():
+            logger.info('filling goals automatically')
+        else:
+            logger.info('not filling goals automatically')
 
     def active_system(self):
         """
@@ -582,6 +608,13 @@ class ValueWidgetGroup(BaseWidgetGroup):
     def value(self, val):
         txt = str(val)
         self.line_edit.setText(txt)
+
+    @property
+    def is_checked(self):
+        if self.checkbox is None:
+            return False
+        else:
+            return self.checkbox.isChecked()
 
 
 class PydmWidgetGroup(BaseWidgetGroup):
