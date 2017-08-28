@@ -181,6 +181,12 @@ class SkywalkerGui(Display):
         slits_pressed = ui.slit_run_button.clicked
         slits_pressed.connect(self.on_slits_button)
 
+        # Set up automatic camera switching
+        self.auto_switch_cam = False
+        for comp_set in self.system.values():
+            imager = comp_set['imager']
+            imager.subscribe(self.auto_switch_cam, run=False)
+
         # Setup the on-screen logger
         self.setup_gui_logger()
 
@@ -263,6 +269,7 @@ class SkywalkerGui(Display):
         Slot for the start button. This begins from an idle state or resumes
         from a paused state.
         """
+        self.auto_switch_cam = True
         if self.RE.state == 'idle':
             logger.info("Starting %s procedure", self.procedure)
             try:
@@ -282,6 +289,7 @@ class SkywalkerGui(Display):
                 self.RE.resume()
             except:
                 logger.exception("Error in procedure.")
+        self.auto_switch_cam = False
 
     @pyqtSlot()
     def on_pause_button(self):
@@ -289,6 +297,7 @@ class SkywalkerGui(Display):
         Slot for the pause button. This brings us from the running state to the
         paused state.
         """
+        self.auto_switch_cam = False
         if self.RE.state == 'running':
             logger.info("Pausing procedure.")
             try:
@@ -302,6 +311,7 @@ class SkywalkerGui(Display):
         Slot for the abort button. This brings us from any state to the idle
         state.
         """
+        self.auto_switch_cam = False
         if self.RE.state != 'idle':
             logger.info("Aborting procedure.")
             try:
@@ -330,6 +340,8 @@ class SkywalkerGui(Display):
         logger.info('Checking the following slits: %s',
                     [slit.name for slit in slits_to_check])
 
+        self.auto_switch_cam = True
+
         # TODO use real plan
         def plan(imager, slit):
             yield from checkpoint()
@@ -341,6 +353,27 @@ class SkywalkerGui(Display):
             logger.info('filling goals automatically')
         else:
             logger.info('not filling goals automatically')
+        self.auto_switch_cam = False
+
+    def pick_cam(self, *args, **kwargs):
+        """
+        Callback to switch the active imager as the procedures progress.
+        """
+        if self.auto_switch_cam:
+            chosen_imager = None
+            for img in self.imagers():
+                if img.position == "Unknown":
+                    return
+                elif img.position == "IN":
+                    chosen_imager = img
+                    break
+            combo = self.ui.image_title_combo
+            if chosen_imager is not None:
+                name = chosen_imager.name
+                if name != combo.currentText():
+                    logger.info('Automatically switching cam to %s', name)
+                    index = self.all_imager_names.index(name)
+                    combo.setCurrentIndex(index)
 
     def active_system(self):
         """
