@@ -3,6 +3,7 @@
 import logging
 from os import path
 from math import sin, cos, pi
+from threading import RLock
 
 from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
@@ -183,9 +184,10 @@ class SkywalkerGui(Display):
 
         # Set up automatic camera switching
         self.auto_switch_cam = False
+        self.cam_lock = RLock()
         for comp_set in self.system.values():
             imager = comp_set['imager']
-            imager.subscribe(self.auto_switch_cam, run=False)
+            imager.subscribe(self.pick_cam, run=False)
 
         # Setup the on-screen logger
         self.setup_gui_logger()
@@ -360,20 +362,21 @@ class SkywalkerGui(Display):
         Callback to switch the active imager as the procedures progress.
         """
         if self.auto_switch_cam:
-            chosen_imager = None
-            for img in self.imagers():
-                if img.position == "Unknown":
-                    return
-                elif img.position == "IN":
-                    chosen_imager = img
-                    break
-            combo = self.ui.image_title_combo
-            if chosen_imager is not None:
-                name = chosen_imager.name
-                if name != combo.currentText():
-                    logger.info('Automatically switching cam to %s', name)
-                    index = self.all_imager_names.index(name)
-                    combo.setCurrentIndex(index)
+            with self.cam_lock:
+                chosen_imager = None
+                for img in self.imagers():
+                    if img.position == "Unknown":
+                        return
+                    elif img.position == "IN":
+                        chosen_imager = img
+                        break
+                combo = self.ui.image_title_combo
+                if chosen_imager is not None:
+                    name = chosen_imager.name
+                    if name != combo.currentText():
+                        logger.info('Automatically switching cam to %s', name)
+                        index = self.all_imager_names.index(name)
+                        combo.setCurrentIndex(index)
 
     def active_system(self):
         """
