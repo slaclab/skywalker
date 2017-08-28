@@ -244,6 +244,7 @@ class SkywalkerGui(Display):
         for obj, widgets in zip(self.mirrors_padded(), self.mirror_groups):
             if obj is None:
                 widgets.hide()
+                widgets.change_obj(None)
             else:
                 widgets.change_obj(obj)
                 widgets.show()
@@ -751,7 +752,11 @@ class ObjWidgetGroup(PydmWidgetGroup):
         """
         self.obj = obj
         pvnames = self.get_pvnames(obj)
-        self.change_pvs(pvnames, name=obj.name, **kwargs)
+        if obj is None:
+            name = None
+        else:
+            name = obj.name
+        self.change_pvs(pvnames, name=name, **kwargs)
 
     def get_pvnames(self, obj):
         """
@@ -868,3 +873,12 @@ class ImgObjWidget(ObjWidgetGroup):
         x2 = x * self.cosd(deg) - y * self.sind(deg)
         y2 = x * self.sind(deg) + y * self.cosd(deg)
         return (x2, y2)
+
+
+def debug_log_pydm_connections():
+    QApp = QCoreApplication.instance()
+    plugins = QApp.plugins
+    ca_plugin = plugins['ca']
+    connections = ca_plugin.connections
+    counts = {k: v.listener_count for k, v in connections.items()}
+    logger.debug('Pydm connection counts: %s', counts)
