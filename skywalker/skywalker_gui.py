@@ -159,10 +159,10 @@ class SkywalkerGui(Display):
         RunEngine.state._memory[self.RE].set_ = new_set
 
         # Connect relevant signals and slots
-        procedure_changed = ui.procedure_combo.activated[str]
+        procedure_changed = ui.procedure_combo.currentIndexChanged[str]
         procedure_changed.connect(self.on_procedure_combo_changed)
 
-        imager_changed = ui.image_title_combo.activated[str]
+        imager_changed = ui.image_title_combo.currentIndexChanged[str]
         imager_changed.connect(self.on_image_combo_changed)
 
         for goal_value in self.get_widget_set('goal_value'):
