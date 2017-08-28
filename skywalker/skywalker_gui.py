@@ -718,7 +718,8 @@ class ImgObjWidget(ObjWidgetGroup):
         super().__init__([img_widget], attrs, img_obj, label=label,
                          rotation=rotation)
 
-    def setup(self, *, pvnames, rotation=0, **kwargs):
+    def setup(self, *, pvnames, name=None, rotation=0, **kwargs):
+        BaseWidgetGroup.setup(self, name=name)
         self.rotation = rotation
         img_widget = self.widgets[0]
         width_pv = pvnames[0]
