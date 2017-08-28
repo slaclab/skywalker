@@ -10,7 +10,7 @@ from bluesky.plans import sleep, checkpoint
 
 from pydm import Display
 from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication, QPoint
-from pydm.PyQt.QtGui import QDoubleValidator
+from pydm.PyQt.QtGui import QDoubleValidator, QScrollArea
 
 from pswalker.config import homs_system
 from pswalker.skywalker import lcls_RE
@@ -58,6 +58,12 @@ class SkywalkerGui(Display):
     def __init__(self, parent=None, args=None):
         super().__init__(parent=parent, args=args)
         ui = self.ui
+
+        # Enable scrolling on small windows
+        scroll = QScrollArea()
+        scroll.setWidget(ui.main_frame)
+        scroll.setWidgetResizable(True)
+        ui.main_layout.addWidget(scroll)
 
         # Load config into the combo box objects
         ui.image_title_combo.clear()
