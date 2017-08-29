@@ -7,14 +7,17 @@ from threading import RLock
 
 from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
-from bluesky.plans import sleep, checkpoint
 
 from pydm import Display
 from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication, QPoint
 from pydm.PyQt.QtGui import QDoubleValidator, QScrollArea
 
+from pcdsdevices import sim
+from pswalker.examples import patch_pims
+
 from pswalker.config import homs_system
-from pswalker.skywalker import lcls_RE
+from pswalker.plan_stubs import slit_scan_fiducialize
+from pswalker.skywalker import lcls_RE, skywalker
 
 logging.basicConfig(level=logging.DEBUG,
                     format=('%(asctime)s '
@@ -26,8 +29,39 @@ logging.basicConfig(level=logging.DEBUG,
                     filemode='a')
 logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
+SIM_MODE = True
 
-config = homs_system()
+if SIM_MODE:
+    s = sim.source.Undulator('test_undulator')
+    m1 = sim.mirror.OffsetMirror('test_m1h', 'test_m1h_xy',
+                                 z=90.510, alpha=0.0014)
+    m2 = sim.mirror.OffsetMirror('test_m2h', 'test_m2h_xy',
+                                 x=0.0317324, z=101.843, alpha=0.0014)
+    xrtm2 = sim.mirror.OffsetMirror('test_xrtm2', 'test_xrtm2_xy',
+                                    x=0.0317324, z=200, alpha=0.0014)
+    y1 = sim.pim.PIM('test_p3h', x=0.0317324, z=103.660,
+                     zero_outside_yag=True)
+    y2 = sim.pim.PIM('test_dg3', x=0.0317324, z=375.000,
+                     zero_outside_yag=True)
+    mecy1 = sim.pim.PIM('test_mecy1', x=0.0317324, z=350,
+                        zero_outside_yag=True)
+    mfxdg1 = mecy1
+    patch_pims([y1, y2], mirrors=[m1, m2], source=s)
+    patch_pims([mecy1], mirrors=[xrtm2], source=s)
+
+    config = dict(
+        m1h=m1,
+        hx2=y1,
+        hx2_slits=None,
+        m2h=m2,
+        dg3=y2,
+        dg3_slits=None,
+        xrtm2=xrtm2,
+        mfxdg1=mfxdg1,
+        mfxdg1_slits=None,
+    )
+else:
+    config = homs_system()
 
 
 class SkywalkerGui(Display):
@@ -272,22 +306,61 @@ class SkywalkerGui(Display):
         Slot for the start button. This begins from an idle state or resumes
         from a paused state.
         """
-        self.auto_switch_cam = True
         if self.RE.state == 'idle':
+            # Check for valid goals
+            active_size = len(self.active_system())
+            raw_goals = []
+            for i, goal in enumerate(self.goals()):
+                if goal is None:
+                    msg = 'Please fill all goal fields before alignment.'
+                    logger.info(msg)
+                    return
+                elif i >= active_size:
+                    break
+                raw_goals.append(goal)
+
             logger.info("Starting %s procedure", self.procedure)
+            self.auto_switch_cam = True
             try:
-                # TODO Skywalker here
-                def plan(n):
-                    for i in range(n):
-                        logger.info("Fake align pt %s", i + 1)
-                        yield from checkpoint()
-                        yield from sleep(2)
-                    logger.info("Fake align done")
-                self.RE(plan(10))
+                alignment = self.alignments[self.procedure]
+                for key_set in alignment:
+                    yags = [self.system[key]['imager'] for key in key_set]
+                    mots = [self.system[key]['mirror'] for key in key_set]
+                    rots = [self.system[key].get('rotation')
+                            for key in key_set]
+                    mot_rbv = 'pitch'
+                    # We need to select det_rbv and interpret goals based on
+                    # the camera rotation, converting things to the unrotated
+                    # coordinates.
+                    det_rbv = []
+                    goals = []
+                    for rot, yag, goal in zip(rots, yags, raw_goals):
+                        rot_info = ad_stats_x_axis_rot(yag, rot)
+                        det_rbv.append(rot_info['key'])
+                        modifier = rot_info['mod']
+                        if modifier is not None:
+                            goal = modifier - goal
+                        goals.append(goal)
+                    first_steps = 6
+                    tolerances = 5
+                    average = 100
+                    timeout = 600
+                    tol_scaling = 8
+                    # Temporary fix: undo skywalker's goal mangling.
+                    # TODO remove goal mangling from skywalker.
+                    goals = [480 - g for g in goals]
+                    plan = skywalker(yags, mots, det_rbv, mot_rbv, goals,
+                                     first_steps=first_steps,
+                                     tolerances=tolerances,
+                                     averages=average, timeout=timeout,
+                                     sim=SIM_MODE, use_filters=not SIM_MODE,
+                                     tol_scaling=tol_scaling)
+                    self.RE(plan)
             except:
                 logger.exception("Error in procedure.")
         elif self.RE.state == 'paused':
             logger.info("Resuming procedure.")
+            self.auto_switch_cam = True
             try:
                 self.RE.resume()
             except:
@@ -336,6 +409,7 @@ class SkywalkerGui(Display):
                                                  self.slits_padded(),
                                                  self.goals_groups):
             if slit_obj is not None and goal_group.is_checked:
+                image_to_check.append(img_obj)
                 slits_to_check.append(slit_obj)
         if not slits_to_check:
             logger.info('No valid slits selected!')
@@ -345,17 +419,30 @@ class SkywalkerGui(Display):
 
         self.auto_switch_cam = True
 
-        # TODO use real plan
-        def plan(imager, slit):
-            yield from checkpoint()
-            logger.info('get point with %s and %s', imager, slit)
-        for img, slit in zip(image_to_check, slits_to_check):
-            self.RE(plan(img, slit))
+        def plan(img, slit, rot, output_obj):
+            rot_info = ad_stats_x_axis_rot(img, rot)
+            det_rbv = rot_info['key']
+            fidu = slit_scan_fiducialize(img, slit, centroid=det_rbv)
+            output = yield from fidu
+            modifier = rot_info['mod']
+            if modifier is not None:
+                output = modifier - output
+            output_obj[img.name] = output
 
+        results = {}
+        for img, slit in zip(image_to_check, slits_to_check):
+            self.RE(plan(img, slit, results))
+
+        logger.info('Slit scan found the following goals: %s', results)
         if self.ui.slit_fill_check.isChecked():
-            logger.info('filling goals automatically')
-        else:
-            logger.info('not filling goals automatically')
+            logger.info('Filling goal fields automatically.')
+            for img, field in zip(self.imagers_padded(), self.goals_groups):
+                if img is not None:
+                    try:
+                        field.value = results[img.name]
+                    except KeyError:
+                        pass
+
         self.auto_switch_cam = False
 
     def pick_cam(self, *args, **kwargs):
@@ -873,6 +960,34 @@ class ImgObjWidget(ObjWidgetGroup):
         x2 = x * self.cosd(deg) - y * self.sind(deg)
         y2 = x * self.sind(deg) + y * self.cosd(deg)
         return (x2, y2)
+
+
+def ad_stats_x_axis_rot(imager, rotation):
+    """
+    Helper function to pick the correct key and modify a value for a rotated
+    areadetector camera with a stats plugin, where you care about the x axis of
+    the centroid.
+
+    Returns
+    -------
+    output: dict
+        ['key']: 'detector_stats2_centroid_x' or 'detector_stats2_centroid_y'
+        ['mod']: int or None. If int, you get a true value by doing int-value
+    """
+    det_key_base = 'detector_stats2_centroid_'
+    sizes = imager.detector.cam.array_size
+    rotation = rotation % 360
+    if rotation % 180 == 0:
+        det_key = det_key_base + 'x'
+        axis_size = sizes.array_size_x.value
+    else:
+        det_key = det_key_base + 'y'
+        axis_size = sizes.array_size_y.value
+    if rotation in (90, 180):
+        modifier = axis_size
+    else:
+        modifier = None
+    return dict(key=det_key, mod=modifier)
 
 
 def debug_log_pydm_connections():
