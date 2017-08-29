@@ -60,8 +60,10 @@ if SIM_MODE:
         mfxdg1=mfxdg1,
         mfxdg1_slits=None,
     )
+    ROTATION = 0
 else:
     config = homs_system()
+    ROTATION = 90
 
 
 class SkywalkerGui(Display):
@@ -74,15 +76,15 @@ class SkywalkerGui(Display):
         m1h=dict(mirror=config['m1h'],
                  imager=config['hx2'],
                  slits=config['hx2_slits'],
-                 rotation=90),
+                 rotation=ROTATION),
         m2h=dict(mirror=config['m2h'],
                  imager=config['dg3'],
                  slits=config['dg3_slits'],
-                 rotation=90),
+                 rotation=ROTATION),
         mfx=dict(mirror=config['xrtm2'],
                  imager=config['mfxdg1'],
                  slits=config['mfxdg1_slits'],
-                 rotation=90)
+                 rotation=ROTATION)
     )
 
     # Alignment mapping of which sets to use for each alignment
@@ -854,7 +856,10 @@ class ObjWidgetGroup(PydmWidgetGroup):
         pvnames = []
         for attr in self.attrs:
             sig = self.nested_getattr(obj, attr)
-            pvnames.append(sig.pvname)
+            try:
+                pvnames.append(sig.pvname)
+            except AttributeError:
+                pvnames.append(None)
         return pvnames
 
     def nested_getattr(self, obj, attr):
@@ -894,8 +899,16 @@ class ImgObjWidget(ObjWidgetGroup):
         img_widget.getImageItem().setRotation(rotation)
         img_widget.resetImageChannel()
         img_widget.resetWidthChannel()
-        img_widget.setWidthChannel(self.protocol + width_pv)
-        img_widget.setImageChannel(self.protocol + image_pv)
+        if width_pv is None:
+            width_channel = ''
+        else:
+            width_channel = self.protocol + width_pv
+        if image_pv is None:
+            image_channel = ''
+        else:
+            image_channel = self.protocol + image_pv
+        img_widget.setWidthChannel(width_channel)
+        img_widget.setImageChannel(image_channel)
         centroid = self.obj.detector.stats2.centroid
         self.beam_x_stats = centroid.x
         self.beam_y_stats = centroid.y
