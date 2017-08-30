@@ -107,12 +107,6 @@ class SkywalkerGui(Display):
             self.sim = True
             self.system = get_system(sim_system(), 0)
 
-        # Enable scrolling on small windows
-        scroll = QScrollArea()
-        scroll.setWidget(ui.main_frame)
-        scroll.setWidgetResizable(True)
-        ui.main_layout.addWidget(scroll)
-
         # Load config into the combo box objects
         ui.image_title_combo.clear()
         ui.procedure_combo.clear()
@@ -961,6 +955,8 @@ class ImgObjWidget(ObjWidgetGroup):
                        yMin=0, yMax=self.raw_size_y)
         img_widget.resetImageChannel()
         img_widget.resetWidthChannel()
+        img_widget.setMinimumWidth(self.size_x)
+        img_widget.setMinimumHeight(self.size_y)
         if width_pv is None:
             width_channel = ''
         else:
