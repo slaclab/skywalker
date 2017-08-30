@@ -157,19 +157,23 @@ class SkywalkerGui(Display):
         self.goals_groups = []
         goal_labels = self.get_widget_set('goal_name')
         goal_edits = self.get_widget_set('goal_value')
-        goal_slits = self.get_widget_set('slit_check')
-        for label, edit, slit, img in zip(goal_labels, goal_edits,
-                                          goal_slits, self.imagers_padded()):
+        slit_checks = self.get_widget_set('slit_check')
+        for label, edit, check, img, slit in zip(goal_labels, goal_edits,
+                                                 slit_checks,
+                                                 self.imagers_padded(),
+                                                 self.slits_padded()):
             if img is None:
                 name = None
             else:
                 name = img.name
             validator = QDoubleValidator(0, 5000, 3)
-            goal_group = ValueWidgetGroup(edit, label, checkbox=slit,
+            goal_group = ValueWidgetGroup(edit, label, checkbox=check,
                                           name=name, cache=self.goal_cache,
                                           validator=validator)
             if img is None:
                 goal_group.hide()
+            elif slit is None:
+                goal_group.checkbox.setEnabled(False)
             self.goals_groups.append(goal_group)
 
         # Initialize image and centroids. Needs goals defined first.
@@ -287,11 +291,17 @@ class SkywalkerGui(Display):
         for obj, widgets in zip(self.imagers_padded(), self.goals_groups):
             widgets.save_value()
             widgets.clear()
-        for obj, widgets in zip(self.imagers_padded(), self.goals_groups):
+        for obj, slit, widgets in zip(self.imagers_padded(),
+                                      self.slits_padded(),
+                                      self.goals_groups):
             if obj is None:
                 widgets.hide()
             else:
                 widgets.setup(name=obj.name)
+                if slit is None:
+                    widgets.checkbox.setEnabled(False)
+                else:
+                    widgets.checkbox.setEnabled(True)
                 widgets.show()
 
     @pyqtSlot()
@@ -313,15 +323,16 @@ class SkywalkerGui(Display):
             active_size = len(self.active_system())
             raw_goals = []
             for i, goal in enumerate(self.goals()):
-                if goal is None:
+                if i >= active_size:
+                    break
+                elif goal is None:
                     msg = 'Please fill all goal fields before alignment.'
                     logger.info(msg)
                     return
-                elif i >= active_size:
-                    break
                 raw_goals.append(goal)
 
-            logger.info("Starting %s procedure", self.procedure)
+            logger.info("Starting %s procedure with goals %s",
+                        self.procedure, raw_goals)
             self.auto_switch_cam = True
             try:
                 alignment = self.alignments[self.procedure]
@@ -464,7 +475,8 @@ class SkywalkerGui(Display):
                 if chosen_imager is not None:
                     name = chosen_imager.name
                     if name != combo.currentText():
-                        logger.info('Automatically switching cam to %s', name)
+                        # TODO why does this segfault
+                        # logger.info('Automatically switching cam to %s',name)
                         index = self.all_imager_names.index(name)
                         combo.setCurrentIndex(index)
 
