@@ -20,14 +20,6 @@ from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
 from pswalker.skywalker import lcls_RE, skywalker
 
-logging.basicConfig(level=logging.DEBUG,
-                    format=('%(asctime)s '
-                            '%(name)-12s '
-                            '%(levelname)-8s '
-                            '%(message)s'),
-                    datefmt='%m-%d %H:%M:%S',
-                    filename='./skywalker_debug.log',
-                    filemode='a')
 logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
 
@@ -94,14 +86,26 @@ class SkywalkerGui(Display):
                   'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
 
     def __init__(self, parent=None, args=None):
+        super().__init__(parent=parent, args=args)
+        ui = self.ui
+
+        # Configure debug file after all the qt logs
+        logging.basicConfig(level=logging.DEBUG,
+                            format=('%(asctime)s '
+                                    '%(name)-12s '
+                                    '%(levelname)-8s '
+                                    '%(message)s'),
+                            datefmt='%m-%d %H:%M:%S',
+                            filename='./skywalker_debug.log',
+                            filemode='a')
+
+        # Decide whether to be sim or real, based on if 'live' at command line
         if 'live' in args:
             self.sim = False
             self.system = get_system(homs_system(), 90)
         else:
             self.sim = True
             self.system = get_system(sim_system(), 0)
-        super().__init__(parent=parent, args=args)
-        ui = self.ui
 
         # Enable scrolling on small windows
         scroll = QScrollArea()
