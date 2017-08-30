@@ -3,6 +3,7 @@
 import logging
 from os import path
 from math import sin, cos, pi
+from functools import partial
 from threading import RLock
 
 from bluesky import RunEngine
@@ -29,9 +30,9 @@ logging.basicConfig(level=logging.DEBUG,
                     filemode='a')
 logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
-SIM_MODE = True
 
-if SIM_MODE:
+
+def sim_system():
     s = sim.source.Undulator('test_undulator')
     m1 = sim.mirror.OffsetMirror('test_m1h', 'test_m1h_xy',
                                  z=90.510, alpha=0.0014)
@@ -60,10 +61,26 @@ if SIM_MODE:
         mfxdg1=mfxdg1,
         mfxdg1_slits=None,
     )
-    ROTATION = 0
-else:
-    config = homs_system()
-    ROTATION = 90
+    return config
+
+
+# System mapping of associated devices
+def get_system(config, rotation):
+    system = dict(
+        m1h=dict(mirror=config['m1h'],
+                 imager=config['hx2'],
+                 slits=config['hx2_slits'],
+                 rotation=rotation),
+        m2h=dict(mirror=config['m2h'],
+                 imager=config['dg3'],
+                 slits=config['dg3_slits'],
+                 rotation=rotation),
+        mfx=dict(mirror=config['xrtm2'],
+                 imager=config['mfxdg1'],
+                 slits=config['mfxdg1_slits'],
+                 rotation=rotation),
+        )
+    return system
 
 
 class SkywalkerGui(Display):
@@ -71,28 +88,18 @@ class SkywalkerGui(Display):
     Display class to define all the logic for the skywalker alignment gui.
     Refers to widgets in the .ui file.
     """
-    # System mapping of associated devices
-    system = dict(
-        m1h=dict(mirror=config['m1h'],
-                 imager=config['hx2'],
-                 slits=config['hx2_slits'],
-                 rotation=ROTATION),
-        m2h=dict(mirror=config['m2h'],
-                 imager=config['dg3'],
-                 slits=config['dg3_slits'],
-                 rotation=ROTATION),
-        mfx=dict(mirror=config['xrtm2'],
-                 imager=config['mfxdg1'],
-                 slits=config['mfxdg1_slits'],
-                 rotation=ROTATION)
-    )
-
     # Alignment mapping of which sets to use for each alignment
     alignments = {'HOMS': [['m1h', 'm2h']],
                   'MFX': [['mfx']],
                   'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
 
     def __init__(self, parent=None, args=None):
+        if 'live' in args:
+            self.sim = False
+            self.system = get_system(homs_system(), 90)
+        else:
+            self.sim = True
+            self.system = get_system(sim_system(), 0)
         super().__init__(parent=parent, args=args)
         ui = self.ui
 
@@ -188,6 +195,10 @@ class SkywalkerGui(Display):
         self.RE = lcls_RE()
         install_qt_kicker()
 
+        # Make sure we don't get stopped by no real beam in sim mode
+        if self.sim:
+            self.RE.clear_suspenders()
+
         # Some hax to keep the state string updated
         # There is probably a better way to do this
         # This might break on some package update
@@ -230,7 +241,29 @@ class SkywalkerGui(Display):
             imager.subscribe(self.pick_cam, run=False)
 
         # Setup the on-screen logger
-        self.setup_gui_logger()
+        console = self.setup_gui_logger()
+
+        # Stop the run if we get closed
+        close_dict = dict(RE=self.RE, console=console)
+        self.destroyed.connect(partial(SkywalkerGui.on_close, close_dict))
+
+        # Put out the initialization message.
+        init_base = 'Skywalker GUI initialized in '
+        if self.sim:
+            init_str = init_base + 'sim mode.'
+        else:
+            init_str = init_base + 'live mode.'
+        logger.info(init_str)
+
+    # Close handler needs to be a static class method because it is run after
+    # the object instance is already completely gone
+    @staticmethod
+    def on_close(close_dict):
+        RE = close_dict['RE']
+        console = close_dict['console']
+        console.close()
+        if RE.state != 'idle':
+            RE.abort()
 
     def setup_gui_logger(self):
         """
@@ -243,7 +276,7 @@ class SkywalkerGui(Display):
                                       datefmt='%m-%d %H:%M:%S')
         console.setFormatter(formatter)
         logging.getLogger('').addHandler(console)
-        logger.info("Skywalker GUI initialized.")
+        return console
 
     @pyqtSlot(str)
     def on_image_combo_changed(self, imager_name):
@@ -366,7 +399,7 @@ class SkywalkerGui(Display):
                                      first_steps=first_steps,
                                      tolerances=tolerances,
                                      averages=average, timeout=timeout,
-                                     sim=SIM_MODE, use_filters=not SIM_MODE,
+                                     sim=self.sim, use_filters=not self.sim,
                                      tol_scaling=tol_scaling)
                     self.RE(plan)
             except:
@@ -600,12 +633,16 @@ class GuiHandler(logging.Handler):
         self.text_widget = text_widget
 
     def emit(self, record):
-        try:
-            msg = self.format(record)
-            cursor = self.text_widget.cursorForPosition(QPoint(0, 0))
-            cursor.insertText(msg + self.terminator)
-        except Exception:
-            self.handleError(record)
+        if self.text_widget is not None:
+            try:
+                msg = self.format(record)
+                cursor = self.text_widget.cursorForPosition(QPoint(0, 0))
+                cursor.insertText(msg + self.terminator)
+            except Exception:
+                self.handleError(record)
+
+    def close(self):
+        self.text_widget = None
 
 
 class BaseWidgetGroup:
