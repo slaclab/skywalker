@@ -908,7 +908,16 @@ class ImgObjWidget(ObjWidgetGroup):
         img_widget = self.widgets[0]
         width_pv = pvnames[0]
         image_pv = pvnames[1]
-        img_widget.getImageItem().setRotation(rotation)
+        image_item = img_widget.getImageItem()
+        image_item.setTransformOriginPoint(self.raw_size_x//2,
+                                           self.raw_size_y//2)
+        image_item.setRotation(rotation)
+        view = img_widget.getView()
+        view.setRange(xRange=(0, self.raw_size_x),
+                      yRange=(0, self.raw_size_y),
+                      padding=0.0)
+        view.setLimits(xMin=0, xMax=self.raw_size_x,
+                       yMin=0, yMax=self.raw_size_y)
         img_widget.resetImageChannel()
         img_widget.resetWidthChannel()
         if width_pv is None:
