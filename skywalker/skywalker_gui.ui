@@ -64,7 +64,10 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_7">
              <item>
-              <layout class="QHBoxLayout" name="image_combo_layout">
+              <layout class="QHBoxLayout" name="image_combo_centerer">
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QComboBox" name="image_title_combo">
                  <property name="maximumSize">
@@ -1198,72 +1201,6 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="PyDMDrawingCircle" name="mirror_circle_1">
-                     <property name="minimumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="toolTip">
-                      <string/>
-                     </property>
-                     <property name="whatsThis">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="PyDMDrawingCircle" name="mirror_circle_2">
-                     <property name="minimumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="toolTip">
-                      <string/>
-                     </property>
-                     <property name="whatsThis">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="PyDMDrawingCircle" name="mirror_circle_3">
-                     <property name="minimumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="toolTip">
-                      <string/>
-                     </property>
-                     <property name="whatsThis">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="3" column="0">
                     <widget class="QLabel" name="mirror_name_4">
                      <property name="font">
@@ -1277,28 +1214,6 @@
                      </property>
                      <property name="alignment">
                       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="PyDMDrawingCircle" name="mirror_circle_4">
-                     <property name="minimumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>20</width>
-                       <height>20</height>
-                      </size>
-                     </property>
-                     <property name="toolTip">
-                      <string/>
-                     </property>
-                     <property name="whatsThis">
-                      <string/>
                      </property>
                     </widget>
                    </item>
@@ -1373,6 +1288,352 @@
                      <property name="showUnits" stdset="0">
                       <bool>false</bool>
                      </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QFrame" name="circle_size_hax_1">
+                     <property name="minimumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="lineWidth">
+                      <number>0</number>
+                     </property>
+                     <widget class="PyDMByteIndicator" name="mirror_circle_1">
+                      <property name="geometry">
+                       <rect>
+                        <x>-10</x>
+                        <y>-5</y>
+                        <width>48</width>
+                        <height>48</height>
+                       </rect>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Monospace</family>
+                        <pointsize>14</pointsize>
+                       </font>
+                      </property>
+                      <property name="toolTip">
+                       <string/>
+                      </property>
+                      <property name="whatsThis">
+                       <string/>
+                      </property>
+                      <property name="onColor" stdset="0">
+                       <color>
+                        <red>100</red>
+                        <green>100</green>
+                        <blue>100</blue>
+                       </color>
+                      </property>
+                      <property name="offColor" stdset="0">
+                       <color>
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>0</blue>
+                       </color>
+                      </property>
+                      <property name="orientation" stdset="0">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="showLabels" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="bigEndian" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="circles" stdset="0">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QFrame" name="circle_size_hax_2">
+                     <property name="minimumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="lineWidth">
+                      <number>0</number>
+                     </property>
+                     <widget class="PyDMByteIndicator" name="mirror_circle_2">
+                      <property name="geometry">
+                       <rect>
+                        <x>-10</x>
+                        <y>-5</y>
+                        <width>48</width>
+                        <height>48</height>
+                       </rect>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Monospace</family>
+                        <pointsize>14</pointsize>
+                       </font>
+                      </property>
+                      <property name="toolTip">
+                       <string/>
+                      </property>
+                      <property name="whatsThis">
+                       <string/>
+                      </property>
+                      <property name="onColor" stdset="0">
+                       <color>
+                        <red>100</red>
+                        <green>100</green>
+                        <blue>100</blue>
+                       </color>
+                      </property>
+                      <property name="offColor" stdset="0">
+                       <color>
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>0</blue>
+                       </color>
+                      </property>
+                      <property name="orientation" stdset="0">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="showLabels" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="bigEndian" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="circles" stdset="0">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QFrame" name="circle_size_hax_3">
+                     <property name="minimumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="lineWidth">
+                      <number>0</number>
+                     </property>
+                     <widget class="PyDMByteIndicator" name="mirror_circle_3">
+                      <property name="geometry">
+                       <rect>
+                        <x>-10</x>
+                        <y>-5</y>
+                        <width>48</width>
+                        <height>48</height>
+                       </rect>
+                      </property>
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Monospace</family>
+                        <pointsize>14</pointsize>
+                       </font>
+                      </property>
+                      <property name="toolTip">
+                       <string/>
+                      </property>
+                      <property name="whatsThis">
+                       <string/>
+                      </property>
+                      <property name="onColor" stdset="0">
+                       <color>
+                        <red>100</red>
+                        <green>100</green>
+                        <blue>100</blue>
+                       </color>
+                      </property>
+                      <property name="offColor" stdset="0">
+                       <color>
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>0</blue>
+                       </color>
+                      </property>
+                      <property name="orientation" stdset="0">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="showLabels" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="bigEndian" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="circles" stdset="0">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QFrame" name="circle_size_hax_4">
+                     <property name="minimumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="lineWidth">
+                      <number>0</number>
+                     </property>
+                     <widget class="PyDMByteIndicator" name="mirror_circle_4">
+                      <property name="geometry">
+                       <rect>
+                        <x>-10</x>
+                        <y>-5</y>
+                        <width>48</width>
+                        <height>48</height>
+                       </rect>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>48</width>
+                        <height>48</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Monospace</family>
+                        <pointsize>14</pointsize>
+                       </font>
+                      </property>
+                      <property name="toolTip">
+                       <string/>
+                      </property>
+                      <property name="whatsThis">
+                       <string/>
+                      </property>
+                      <property name="onColor" stdset="0">
+                       <color>
+                        <red>100</red>
+                        <green>100</green>
+                        <blue>100</blue>
+                       </color>
+                      </property>
+                      <property name="offColor" stdset="0">
+                       <color>
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>0</blue>
+                       </color>
+                      </property>
+                      <property name="orientation" stdset="0">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="showLabels" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="bigEndian" stdset="0">
+                       <bool>false</bool>
+                      </property>
+                      <property name="circles" stdset="0">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
                     </widget>
                    </item>
                   </layout>
@@ -1699,9 +1960,9 @@
    <header>pydm.widgets.line_edit</header>
   </customwidget>
   <customwidget>
-   <class>PyDMDrawingCircle</class>
+   <class>PyDMByteIndicator</class>
    <extends>QWidget</extends>
-   <header>pydm.widgets.drawing</header>
+   <header>pydm.widgets.byte</header>
   </customwidget>
  </customwidgets>
  <resources/>
