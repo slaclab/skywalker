@@ -14,7 +14,7 @@
    <string>Skywalker</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QFrame { padding: 1px; border-width: 4px; margin: 1px }</string>
+   <string notr="true"/>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
@@ -31,6 +31,12 @@
        <height>1000</height>
       </size>
      </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="lineWidth">
+      <number>0</number>
+     </property>
      <property name="sizeAdjustPolicy">
       <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
      </property>
@@ -42,9 +48,12 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1270</width>
-        <height>990</height>
+        <width>1282</width>
+        <height>1002</height>
        </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QFrame { padding: 1px; border-width: 4px; margin: 1px }</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_9">
        <item>
