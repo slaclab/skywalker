@@ -10,8 +10,10 @@ from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
 
 from pydm import Display
-from pydm.PyQt.QtCore import pyqtSlot, QCoreApplication, QPoint
-from pydm.PyQt.QtGui import QDoubleValidator, QScrollArea
+from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
+                              QCoreApplication,
+                              QPoint, QObject, QEvent)
+from pydm.PyQt.QtGui import QDoubleValidator
 
 from pcdsdevices import sim
 from pswalker.examples import patch_pims
@@ -187,6 +189,7 @@ class SkywalkerGui(Display):
                                         ui.beam_x_delta, ui.beam_y_delta,
                                         ui.readback_imager_title,
                                         self, first_rotation)
+        ui.image.setColorMapToPreset('jet')
 
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
@@ -238,6 +241,19 @@ class SkywalkerGui(Display):
             imager = comp_set['imager']
             imager.subscribe(self.pick_cam, run=False)
 
+        # Store some info about our screen size.
+        QApp = QCoreApplication.instance()
+        desktop = QApp.desktop()
+        geometry = desktop.screenGeometry()
+        self.screen_size = (geometry.width(), geometry.height())
+        window_qsize = self.window().size()
+        self.preferred_size = (window_qsize.width(), window_qsize.height())
+
+        # Setup the post-init hook
+        post_init = PostInit(self)
+        self.installEventFilter(post_init)
+        post_init.post_init.connect(self.on_post_init)
+
         # Setup the on-screen logger
         console = self.setup_gui_logger()
 
@@ -252,6 +268,12 @@ class SkywalkerGui(Display):
         else:
             init_str = init_base + 'live mode.'
         logger.info(init_str)
+
+    @pyqtSlot()
+    def on_post_init(self):
+        x = min(self.preferred_size[0], self.screen_size[0])
+        y = min(self.preferred_size[1], self.screen_size[1])
+        self.window().resize(x, y)
 
     # Close handler needs to be a static class method because it is run after
     # the object instance is already completely gone
@@ -641,6 +663,22 @@ class GuiHandler(logging.Handler):
 
     def close(self):
         self.text_widget = None
+
+
+class PostInit(QObject):
+    """
+    Catch the visibility event for one last sequence of functions after pydm is
+    fully initialized, which is later than we can do things inside __init__.
+    """
+    post_init = pyqtSignal()
+    do_it = True
+
+    def eventFilter(self, obj, event):
+        if self.do_it and event.type() == QEvent.WindowActivate:
+            self.do_it = False
+            self.post_init.emit()
+            return True
+        return False
 
 
 class BaseWidgetGroup:
