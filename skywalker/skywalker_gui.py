@@ -6,6 +6,8 @@ from math import sin, cos, pi
 from functools import partial
 from threading import RLock
 
+import simplejson as json
+
 from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
 
@@ -101,15 +103,13 @@ class SkywalkerGui(Display):
                             filename='./skywalker_debug.log',
                             filemode='a')
 
-        # Decide whether to be sim or real, based on if 'live' at command line
-        if 'live' in args:
-            self.sim = False
-            self.system = get_system(homs_system(), 90)
-        else:
-            self.sim = True
-            self.system = get_system(sim_system(), 0)
+        # Set self.sim, self.system, self.nominal_config
+        self.parse_args(args)
 
-        # Load config into the combo box objects
+        self.config_cache = {}
+        self.cache_config()
+
+        # Load system and alignments into the combo box objects
         ui.image_title_combo.clear()
         ui.procedure_combo.clear()
         self.all_imager_names = [entry['imager'].name for
@@ -160,7 +160,6 @@ class SkywalkerGui(Display):
             self.mirror_groups.append(mirror_group)
 
         # Initialize the goal entry fields
-        self.goal_cache = {}
         self.goals_groups = []
         goal_labels = self.get_widget_set('goal_name')
         goal_edits = self.get_widget_set('goal_value')
@@ -175,7 +174,7 @@ class SkywalkerGui(Display):
                 name = img.name
             validator = QDoubleValidator(0, 5000, 3)
             goal_group = ValueWidgetGroup(edit, label, checkbox=check,
-                                          name=name, cache=self.goal_cache,
+                                          name=name, cache=self.config_cache,
                                           validator=validator)
             if img is None:
                 goal_group.hide()
@@ -234,6 +233,12 @@ class SkywalkerGui(Display):
         slits_pressed = ui.slit_run_button.clicked
         slits_pressed.connect(self.on_slits_button)
 
+        save_mirrors_pressed = ui.save_mirrors_button.clicked
+        save_mirrors_pressed.connect(self.on_save_mirrors_button)
+
+        save_goals_pressed = ui.save_goals_button.clicked
+        save_goals_pressed.connect(self.on_save_goals_button)
+
         # Set up automatic camera switching
         self.auto_switch_cam = False
         self.cam_lock = RLock()
@@ -268,6 +273,33 @@ class SkywalkerGui(Display):
         else:
             init_str = init_base + 'live mode.'
         logger.info(init_str)
+
+    def parse_args(self, args):
+        logger.debug('Parsing args: %s', args)
+        i = 0
+        is_live = False
+        has_cfg = False
+        while i < len(args):
+            this_arg = args[i]
+            try:
+                next_arg = args[i+1]
+            except IndexError:
+                next_arg = None
+            if this_arg == '--live':
+                is_live = True
+                self.sim = False
+                self.system = get_system(homs_system(), 90)
+                i += 1
+            elif this_arg == '--cfg':
+                has_cfg = True
+                self.nominal_config = next_arg
+                i += 2
+                logger.debug('Using config file %s', next_arg)
+        if not is_live:
+            self.sim = True
+            self.system = get_system(sim_system(), 0)
+        if not has_cfg:
+            self.nominal_config = None
 
     @pyqtSlot()
     def on_post_init(self):
@@ -394,6 +426,14 @@ class SkywalkerGui(Display):
                     mots = [self.system[key]['mirror'] for key in key_set]
                     rots = [self.system[key].get('rotation')
                             for key in key_set]
+
+                    # Make sure nominal positions are correct
+                    for mot in mots:
+                        try:
+                            mot.nominal_position = self.config_cache[mot.name]
+                        except KeyError:
+                            pass
+
                     mot_rbv = 'pitch'
                     # We need to select det_rbv and interpret goals based on
                     # the camera rotation, converting things to the unrotated
@@ -511,6 +551,16 @@ class SkywalkerGui(Display):
 
         self.auto_switch_cam = False
 
+    @pyqtSlot()
+    def on_save_mirrors_button(self):
+        logger.info('Saving mirror positions.')
+        self.save_active_mirrors()
+
+    @pyqtSlot()
+    def on_save_goals_button(self):
+        logger.info('Saving goals.')
+        self.save_active_goals()
+
     def pick_cam(self, *args, **kwargs):
         """
         Callback to switch the active imager as the procedures progress.
@@ -532,6 +582,62 @@ class SkywalkerGui(Display):
                         # logger.info('Automatically switching cam to %s',name)
                         index = self.all_imager_names.index(name)
                         combo.setCurrentIndex(index)
+
+    def read_config(self):
+        if self.nominal_config is not None:
+            try:
+                with open(self.nominal_config, 'r') as f:
+                    d = json.load(f)
+            except:
+                logger.exception('File %s not found!', self.nominal_config)
+                return None
+            return d
+        return None
+
+    def save_config(self, d):
+        if self.nominal_config is not None:
+            with open(self.nominal_config, 'w') as f:
+                json.dump(d, f)
+
+    def cache_config(self):
+        d = self.read_config()
+        if d is not None:
+            self.config_cache.update(d)
+
+    def save_goal(self, goal_group):
+        if goal_group.value is None:
+            logger.info('No value to save for this goal.')
+            return
+        d = self.read_config() or {}
+        d[goal_group.text()] = goal_group.value
+        self.save_config(d)
+
+    def save_active_goals(self):
+        text = []
+        values = []
+        for i, goal_group in enumerate(self.goals_groups):
+            if i >= len(self.active_system()):
+                break
+            val = goal_group.value
+            if val is not None:
+                values.append(val)
+                text.append(goal_group.text())
+        d = self.read_config() or {}
+        for t, v in zip(text, values):
+            d[t] = v
+        self.save_config(d)
+
+    def save_mirror(self, mirror_group):
+        d = self.read_config() or {}
+        mirror = mirror_group.obj
+        d[mirror.name] = mirror.position
+        self.save_config(d)
+
+    def save_active_mirrors(self):
+        d = self.read_config() or {}
+        for mirror in self.mirrors():
+            d[mirror.name] = mirror.position
+        self.save_config(d)
 
     def active_system(self):
         """
@@ -726,6 +832,12 @@ class BaseWidgetGroup:
             widget.show()
         if self.label is not None:
             self.label.show()
+
+    def text(self):
+        if self.label is None:
+            return None
+        else:
+            return self.label.text()
 
 
 class ValueWidgetGroup(BaseWidgetGroup):
