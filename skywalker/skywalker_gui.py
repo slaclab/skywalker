@@ -555,11 +555,13 @@ class SkywalkerGui(Display):
     def on_save_mirrors_button(self):
         logger.info('Saving mirror positions.')
         self.save_active_mirrors()
+        self.cache_config()
 
     @pyqtSlot()
     def on_save_goals_button(self):
         logger.info('Saving goals.')
         self.save_active_goals()
+        self.cache_config()
 
     def pick_cam(self, *args, **kwargs):
         """
