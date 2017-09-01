@@ -192,12 +192,11 @@ class SkywalkerGui(Display):
 
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
-        self.RE = lcls_RE()
-        install_qt_kicker()
-
-        # Make sure we don't get stopped by no real beam in sim mode
         if self.sim:
-            self.RE.clear_suspenders()
+            self.RE = RunEngine({})
+        else:
+            self.RE = lcls_RE()
+        install_qt_kicker()
 
         # Some hax to keep the state string updated
         # There is probably a better way to do this
