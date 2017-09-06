@@ -10,6 +10,7 @@ import simplejson as json
 
 from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
+from bluesky.plans import run_wrapper, stage_wrapper
 
 from pydm import Display
 from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
@@ -106,6 +107,12 @@ class SkywalkerGui(Display):
         # Set self.sim, self.system, self.nominal_config
         self.parse_args(args)
 
+        # Convenient remappings of the system
+        self.imager_info = {}
+        for info in self.system.values():
+            self.imager_info[info['imager'].name] = info
+
+        # Load things
         self.config_cache = {}
         self.cache_config()
 
@@ -341,12 +348,10 @@ class SkywalkerGui(Display):
             name of the imager to activate
         """
         logger.info('Selecting imager %s', imager_name)
-        for k, v in self.system.items():
-            if imager_name == v['imager'].name:
-                image_obj = v['imager']
-                slits_obj = v.get('slits')
-                rotation = v.get('rotation', 0)
-        self.image_obj = image_obj
+        info = self.imager_info[imager_name]
+        self.image_obj = info['imager']
+        slits_obj = info.get('slits')
+        rotation = info.get('rotation', 0)
         self.image_group.change_obj(image_obj, rotation=rotation)
         if slits_obj is not None:
             self.slit_group.change_obj(slits_obj)
@@ -527,7 +532,7 @@ class SkywalkerGui(Display):
         def plan(img, slit, rot, output_obj):
             rot_info = ad_stats_x_axis_rot(img, rot)
             det_rbv = rot_info['key']
-            fidu = slit_scan_fiducialize(img, slit, centroid=det_rbv)
+            fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv)
             output = yield from fidu
             modifier = rot_info['mod']
             if modifier is not None:
@@ -536,7 +541,11 @@ class SkywalkerGui(Display):
 
         results = {}
         for img, slit in zip(image_to_check, slits_to_check):
-            self.RE(plan(img, slit, results))
+            rotation = self.imager_info[img.name]['rotation']
+            this_plan = plan(img, slit, rotation, results)
+            wrapped = run_wrapper(this_plan)
+            wrapped = stage_wrapper(wrapped, [img, slit])
+            self.RE(wrapped)
 
         logger.info('Slit scan found the following goals: %s', results)
         if self.ui.slit_fill_check.isChecked():
