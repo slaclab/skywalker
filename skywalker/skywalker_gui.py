@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import logging
 from os import path
-from math import sin, cos, pi
 from functools import partial
 from threading import RLock
 
@@ -457,7 +456,7 @@ class SkywalkerGui(Display):
                     for rot, yag, goal in zip(rots, yags, raw_goals):
                         rot_info = ad_stats_x_axis_rot(yag, rot)
                         det_rbv.append(rot_info['key'])
-                        modifier = rot_info['mod']
+                        modifier = rot_info['mod_x']
                         if modifier is not None:
                             goal = modifier - goal
                         goals.append(goal)
@@ -543,7 +542,7 @@ class SkywalkerGui(Display):
                 det_rbv = rot_info['key']
                 fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv)
                 output = yield from fidu
-                modifier = rot_info['mod']
+                modifier = rot_info['mod_x']
                 if modifier is not None:
                     output = modifier - output
                 output_obj[img.name] = output
@@ -1109,6 +1108,8 @@ class ImgObjWidget(ObjWidgetGroup):
         self.delta_x_widget = delta_x_widget
         self.delta_y_widget = delta_y_widget
         self.goals_source = goals_source
+        self.xpos = 0
+        self.ypos = 0
         attrs = ['detector.image2.width',
                  'detector.image2.array_data']
         super().__init__([img_widget], attrs, img_obj, label=label,
@@ -1116,7 +1117,19 @@ class ImgObjWidget(ObjWidgetGroup):
 
     def setup(self, *, pvnames, name=None, rotation=0, **kwargs):
         BaseWidgetGroup.setup(self, name=name)
+        try:
+            self.cent_x.clear_sub(self.update_centroid)
+            self.cent_y.clear_sub(self.update_centroid)
+        except (AttributeError, ValueError):
+            pass
         self.rotation = rotation
+        rot_info = ad_stats_x_axis_rot(self.obj, rotation)
+        self.size_x = rot_info['x_size'].value
+        self.size_y = rot_info['y_size'].value
+        self.cent_x = rot_info['x_cent']
+        self.cent_y = rot_info['y_cent']
+        self.mod_x = rot_info['mod_x']
+        self.mod_y = rot_info['mod_y']
         img_widget = self.widgets[0]
         width_pv = pvnames[0]
         image_pv = pvnames[1]
@@ -1144,48 +1157,35 @@ class ImgObjWidget(ObjWidgetGroup):
             image_channel = self.protocol + image_pv
         img_widget.setWidthChannel(width_channel)
         img_widget.setImageChannel(image_channel)
-        centroid = self.obj.detector.stats2.centroid
-        self.beam_x_stats = centroid.x
-        self.beam_y_stats = centroid.y
-        self.beam_x_stats.subscribe(self.update_centroid)
-        self.update_centroid()
+        self.cent_x.subscribe(self.update_centroid)
+        self.cent_y.subscribe(self.update_centroid)
 
     def update_centroid(self, *args, **kwargs):
-        centroid_x = self.beam_x_stats.value
-        centroid_y = self.beam_y_stats.value
-        rotation = -self.rotation
-        xpos, ypos = self.rotate(centroid_x, centroid_y, rotation)
-        if xpos < 0:
-            xpos += self.size_x
-        if ypos < 0:
-            ypos += self.size_y
-        self.xpos = xpos
-        self.ypos = ypos
-        self.cent_x_widget.setText(str(xpos))
-        self.cent_y_widget.setText(str(ypos))
+        xpos = self.cent_x.value
+        ypos = self.cent_y.value
+        if self.mod_x is not None and xpos not in (0, None):
+            xpos = self.mod_x - xpos
+        if self.mod_y is not None and ypos not in (0, None):
+            ypos = self.mod_y - ypos
+        if xpos is not None:
+            self.cent_x_widget.setText("{:.1f}".format(xpos))
+            self.xpos = xpos
+        if ypos is not None:
+            self.cent_y_widget.setText("{:.1f}".format(ypos))
+            self.ypos = ypos
         self.update_deltas()
 
-    def update_deltas(self):
+    def update_deltas(self, *args, **kwargs):
         goal = self.goals_source.goal()
         if goal is None:
             self.delta_x_widget.clear()
         else:
-            self.delta_x_widget.setText(str(self.xpos - goal))
+            self.delta_x_widget.setText("{:.1f}".format(self.xpos - goal))
         self.delta_y_widget.clear()
 
     @property
     def size(self):
-        rot_x, rot_y = self.rotate(self.raw_size_x, self.raw_size_y,
-                                   self.rotation)
-        return (int(round(abs(rot_x))), int(round(abs(rot_y))))
-
-    @property
-    def size_x(self):
-        return self.size[0]
-
-    @property
-    def size_y(self):
-        return self.size[1]
+        return (self.size_x, self.size_y)
 
     @property
     def raw_size_x(self):
@@ -1194,20 +1194,6 @@ class ImgObjWidget(ObjWidgetGroup):
     @property
     def raw_size_y(self):
         return self.obj.detector.cam.array_size.array_size_y.value
-
-    def to_rad(self, deg):
-        return deg*pi/180
-
-    def sind(self, deg):
-        return sin(self.to_rad(deg))
-
-    def cosd(self, deg):
-        return cos(self.to_rad(deg))
-
-    def rotate(self, x, y, deg):
-        x2 = x * self.cosd(deg) - y * self.sind(deg)
-        y2 = x * self.sind(deg) + y * self.cosd(deg)
-        return (x2, y2)
 
 
 def ad_stats_x_axis_rot(imager, rotation):
@@ -1220,22 +1206,43 @@ def ad_stats_x_axis_rot(imager, rotation):
     -------
     output: dict
         ['key']: 'detector_stats2_centroid_x' or 'detector_stats2_centroid_y'
-        ['mod']: int or None. If int, you get a true value by doing int-value
+        ['mod_x']: int or None. If int, you get a true value by doing int-value
+        ['mod_y']: int or None. If int, you get a true value by doing int-value
+        ['x_cent']: Signal associated with the x centroid
+        ['y_cent']: Signal associated with the y centroid
+        ['x_size']: Signal associated with the x size
+        ['y_size']: Signal associated with the y size
     """
     det_key_base = 'detector_stats2_centroid_'
     sizes = imager.detector.cam.array_size
+    centroid = imager.detector.stats2.centroid
     rotation = rotation % 360
     if rotation % 180 == 0:
         det_key = det_key_base + 'x'
-        axis_size = sizes.array_size_x.value
+        x_size = sizes.array_size_x
+        y_size = sizes.array_size_y
+        x_cent = centroid.x
+        y_cent = centroid.y
     else:
         det_key = det_key_base + 'y'
-        axis_size = sizes.array_size_y.value
-    if rotation in (90, 180):
-        modifier = axis_size
+        x_size = sizes.array_size_y
+        y_size = sizes.array_size_x
+        x_cent = centroid.y
+        y_cent = centroid.x
+    if rotation == 0:
+        mod_x = None
+        mod_y = None
+    elif rotation == 90:
+        mod_x = y_size.value
+        mod_y = None
+    elif rotation == 180:
+        mod_x = x_size.value
+        mod_y = y_size.value
     else:
-        modifier = None
-    return dict(key=det_key, mod=modifier)
+        mod_x = None
+        mod_y = x_size.value
+    return dict(key=det_key, mod_x=mod_x, mod_y=mod_y, x_cent=x_cent,
+                y_cent=y_cent, x_size=x_size, y_size=y_size)
 
 
 def debug_log_pydm_connections():
