@@ -37,9 +37,6 @@
      <property name="lineWidth">
       <number>0</number>
      </property>
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
-     </property>
      <property name="widgetResizable">
       <bool>true</bool>
      </property>

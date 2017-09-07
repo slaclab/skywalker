@@ -10,6 +10,7 @@ import simplejson as json
 
 from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
+from bluesky.plans import run_wrapper, stage_wrapper
 
 from pydm import Display
 from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
@@ -106,6 +107,12 @@ class SkywalkerGui(Display):
         # Set self.sim, self.system, self.nominal_config
         self.parse_args(args)
 
+        # Convenient remappings of the system
+        self.imager_info = {}
+        for info in self.system.values():
+            self.imager_info[info['imager'].name] = info
+
+        # Load things
         self.config_cache = {}
         self.cache_config()
 
@@ -340,16 +347,18 @@ class SkywalkerGui(Display):
         imager_name: str
             name of the imager to activate
         """
-        logger.info('Selecting imager %s', imager_name)
-        for k, v in self.system.items():
-            if imager_name == v['imager'].name:
-                image_obj = v['imager']
-                slits_obj = v.get('slits')
-                rotation = v.get('rotation', 0)
-        self.image_obj = image_obj
-        self.image_group.change_obj(image_obj, rotation=rotation)
-        if slits_obj is not None:
-            self.slit_group.change_obj(slits_obj)
+        try:
+            logger.info('Selecting imager %s', imager_name)
+            info = self.imager_info[imager_name]
+            image_obj = info['imager']
+            slits_obj = info.get('slits')
+            rotation = info.get('rotation', 0)
+            self.image_obj = image_obj
+            self.image_group.change_obj(image_obj, rotation=rotation)
+            if slits_obj is not None:
+                self.slit_group.change_obj(slits_obj)
+        except:
+            logger.exception()
 
     @pyqtSlot(str)
     def on_procedure_combo_changed(self, procedure_name):
@@ -363,30 +372,33 @@ class SkywalkerGui(Display):
         procedure_name: str
             name of the procedure to activate
         """
-        logger.info('Selecting procedure %s', procedure_name)
-        self.procedure = procedure_name
-        for obj, widgets in zip(self.mirrors_padded(), self.mirror_groups):
-            if obj is None:
-                widgets.hide()
-                widgets.change_obj(None)
-            else:
-                widgets.change_obj(obj)
-                widgets.show()
-        for obj, widgets in zip(self.imagers_padded(), self.goals_groups):
-            widgets.save_value()
-            widgets.clear()
-        for obj, slit, widgets in zip(self.imagers_padded(),
-                                      self.slits_padded(),
-                                      self.goals_groups):
-            if obj is None:
-                widgets.hide()
-            else:
-                widgets.setup(name=obj.name)
-                if slit is None:
-                    widgets.checkbox.setEnabled(False)
+        try:
+            logger.info('Selecting procedure %s', procedure_name)
+            self.procedure = procedure_name
+            for obj, widgets in zip(self.mirrors_padded(), self.mirror_groups):
+                if obj is None:
+                    widgets.hide()
+                    widgets.change_obj(None)
                 else:
-                    widgets.checkbox.setEnabled(True)
-                widgets.show()
+                    widgets.change_obj(obj)
+                    widgets.show()
+            for obj, widgets in zip(self.imagers_padded(), self.goals_groups):
+                widgets.save_value()
+                widgets.clear()
+            for obj, slit, widgets in zip(self.imagers_padded(),
+                                          self.slits_padded(),
+                                          self.goals_groups):
+                if obj is None:
+                    widgets.hide()
+                else:
+                    widgets.setup(name=obj.name)
+                    if slit is None:
+                        widgets.checkbox.setEnabled(False)
+                    else:
+                        widgets.checkbox.setEnabled(True)
+                    widgets.show()
+        except:
+            logger.exception()
 
     @pyqtSlot()
     def on_goal_changed(self):
@@ -394,7 +406,10 @@ class SkywalkerGui(Display):
         Slot for when the user picks a new goal. Updates the goal delta so it
         reflects the new chosen value.
         """
-        self.image_group.update_deltas()
+        try:
+            self.image_group.update_deltas()
+        except:
+            logger.exception()
 
     @pyqtSlot()
     def on_start_button(self):
@@ -402,23 +417,23 @@ class SkywalkerGui(Display):
         Slot for the start button. This begins from an idle state or resumes
         from a paused state.
         """
-        if self.RE.state == 'idle':
-            # Check for valid goals
-            active_size = len(self.active_system())
-            raw_goals = []
-            for i, goal in enumerate(self.goals()):
-                if i >= active_size:
-                    break
-                elif goal is None:
-                    msg = 'Please fill all goal fields before alignment.'
-                    logger.info(msg)
-                    return
-                raw_goals.append(goal)
+        try:
+            if self.RE.state == 'idle':
+                # Check for valid goals
+                active_size = len(self.active_system())
+                raw_goals = []
+                for i, goal in enumerate(self.goals()):
+                    if i >= active_size:
+                        break
+                    elif goal is None:
+                        msg = 'Please fill all goal fields before alignment.'
+                        logger.info(msg)
+                        return
+                    raw_goals.append(goal)
 
-            logger.info("Starting %s procedure with goals %s",
-                        self.procedure, raw_goals)
-            self.auto_switch_cam = True
-            try:
+                logger.info("Starting %s procedure with goals %s",
+                            self.procedure, raw_goals)
+                self.auto_switch_cam = True
                 alignment = self.alignments[self.procedure]
                 for key_set in alignment:
                     yags = [self.system[key]['imager'] for key in key_set]
@@ -461,16 +476,14 @@ class SkywalkerGui(Display):
                                      sim=self.sim, use_filters=not self.sim,
                                      tol_scaling=tol_scaling)
                     self.RE(plan)
-            except:
-                logger.exception("Error in procedure.")
-        elif self.RE.state == 'paused':
-            logger.info("Resuming procedure.")
-            self.auto_switch_cam = True
-            try:
+            elif self.RE.state == 'paused':
+                logger.info("Resuming procedure.")
+                self.auto_switch_cam = True
                 self.RE.resume()
-            except:
-                logger.exception("Error in procedure.")
-        self.auto_switch_cam = False
+        except:
+            logger.exception()
+        finally:
+            self.auto_switch_cam = False
 
     @pyqtSlot()
     def on_pause_button(self):
@@ -505,62 +518,75 @@ class SkywalkerGui(Display):
         """
         Slot for the slits procedure. This checks the slit fiducialization.
         """
-        logger.info('Starting slit check process.')
-        image_to_check = []
-        slits_to_check = []
+        try:
+            logger.info('Starting slit check process.')
+            image_to_check = []
+            slits_to_check = []
 
-        # First, check the slit checkboxes.
-        for img_obj, slit_obj, goal_group in zip(self.imagers_padded(),
-                                                 self.slits_padded(),
-                                                 self.goals_groups):
-            if slit_obj is not None and goal_group.is_checked:
-                image_to_check.append(img_obj)
-                slits_to_check.append(slit_obj)
-        if not slits_to_check:
-            logger.info('No valid slits selected!')
-            return
-        logger.info('Checking the following slits: %s',
-                    [slit.name for slit in slits_to_check])
+            # First, check the slit checkboxes.
+            for img_obj, slit_obj, goal_group in zip(self.imagers_padded(),
+                                                     self.slits_padded(),
+                                                     self.goals_groups):
+                if slit_obj is not None and goal_group.is_checked:
+                    image_to_check.append(img_obj)
+                    slits_to_check.append(slit_obj)
+            if not slits_to_check:
+                logger.info('No valid slits selected!')
+                return
+            logger.info('Checking the following slits: %s',
+                        [slit.name for slit in slits_to_check])
 
-        self.auto_switch_cam = True
+            self.auto_switch_cam = True
 
-        def plan(img, slit, rot, output_obj):
-            rot_info = ad_stats_x_axis_rot(img, rot)
-            det_rbv = rot_info['key']
-            fidu = slit_scan_fiducialize(img, slit, centroid=det_rbv)
-            output = yield from fidu
-            modifier = rot_info['mod']
-            if modifier is not None:
-                output = modifier - output
-            output_obj[img.name] = output
+            def plan(img, slit, rot, output_obj):
+                rot_info = ad_stats_x_axis_rot(img, rot)
+                det_rbv = rot_info['key']
+                fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv)
+                output = yield from fidu
+                modifier = rot_info['mod']
+                if modifier is not None:
+                    output = modifier - output
+                output_obj[img.name] = output
 
-        results = {}
-        for img, slit in zip(image_to_check, slits_to_check):
-            self.RE(plan(img, slit, results))
+            results = {}
+            for img, slit in zip(image_to_check, slits_to_check):
+                rotation = self.imager_info[img.name]['rotation']
+                this_plan = plan(img, slit, rotation, results)
+                wrapped = run_wrapper(this_plan)
+                wrapped = stage_wrapper(wrapped, [img, slit])
+                self.RE(wrapped)
 
-        logger.info('Slit scan found the following goals: %s', results)
-        if self.ui.slit_fill_check.isChecked():
-            logger.info('Filling goal fields automatically.')
-            for img, field in zip(self.imagers_padded(), self.goals_groups):
-                if img is not None:
-                    try:
-                        field.value = results[img.name]
-                    except KeyError:
-                        pass
-
-        self.auto_switch_cam = False
+            logger.info('Slit scan found the following goals: %s', results)
+            if self.ui.slit_fill_check.isChecked():
+                logger.info('Filling goal fields automatically.')
+                for img, fld in zip(self.imagers_padded(), self.goals_groups):
+                    if img is not None:
+                        try:
+                            fld.value = results[img.name]
+                        except KeyError:
+                            pass
+        except:
+            logger.exception()
+        finally:
+            self.auto_switch_cam = False
 
     @pyqtSlot()
     def on_save_mirrors_button(self):
-        logger.info('Saving mirror positions.')
-        self.save_active_mirrors()
-        self.cache_config()
+        try:
+            logger.info('Saving mirror positions.')
+            self.save_active_mirrors()
+            self.cache_config()
+        except:
+            logger.exception()
 
     @pyqtSlot()
     def on_save_goals_button(self):
-        logger.info('Saving goals.')
-        self.save_active_goals()
-        self.cache_config()
+        try:
+            logger.info('Saving goals.')
+            self.save_active_goals()
+            self.cache_config()
+        except:
+            logger.exception()
 
     def pick_cam(self, *args, **kwargs):
         """
