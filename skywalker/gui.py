@@ -767,7 +767,7 @@ class SkywalkerGui(Display):
         return widgets
 
     def ui_filename(self):
-        return 'skywalker_gui.ui'
+        return 'gui.ui'
 
     def ui_filepath(self):
         return path.join(path.dirname(path.realpath(__file__)),
