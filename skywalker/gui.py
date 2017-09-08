@@ -23,9 +23,10 @@ from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
 from pswalker.skywalker import lcls_RE, skywalker
 
-from .logger import GuiHandler
-from .utils import ad_stats_x_axis_rot
-from .widgetgroup import ObjWidgetGroup, ValueWidgetGroup, ImgObjWidget
+from skywalker.logger import GuiHandler
+from skywalker.utils import ad_stats_x_axis_rot
+from skywalker.widgetgroup import (ObjWidgetGroup, ValueWidgetGroup,
+                                   ImgObjWidget)
 
 logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
