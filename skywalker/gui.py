@@ -361,7 +361,7 @@ class SkywalkerGui(Display):
             if slits_obj is not None:
                 self.slit_group.change_obj(slits_obj)
         except:
-            logger.exception()
+            logger.exception('Error on selecting imager')
 
     @pyqtSlot(str)
     def on_procedure_combo_changed(self, procedure_name):
@@ -401,7 +401,7 @@ class SkywalkerGui(Display):
                         widgets.checkbox.setEnabled(True)
                     widgets.show()
         except:
-            logger.exception()
+            logger.exception('Error on selecting procedure')
 
     @pyqtSlot()
     def on_goal_changed(self):
@@ -412,7 +412,7 @@ class SkywalkerGui(Display):
         try:
             self.image_group.update_deltas()
         except:
-            logger.exception()
+            logger.exception('Error on changing goal')
 
     @pyqtSlot()
     def on_start_button(self):
@@ -484,7 +484,7 @@ class SkywalkerGui(Display):
                 self.auto_switch_cam = True
                 self.RE.resume()
         except:
-            logger.exception()
+            logger.exception('Error in running procedure')
         finally:
             self.auto_switch_cam = False
 
@@ -569,7 +569,7 @@ class SkywalkerGui(Display):
                         except KeyError:
                             pass
         except:
-            logger.exception()
+            logger.exception('Error on slits button')
         finally:
             self.auto_switch_cam = False
 
@@ -580,7 +580,7 @@ class SkywalkerGui(Display):
             self.save_active_mirrors()
             self.cache_config()
         except:
-            logger.exception()
+            logger.exception('Error on saving mirrors')
 
     @pyqtSlot()
     def on_save_goals_button(self):
@@ -589,7 +589,7 @@ class SkywalkerGui(Display):
             self.save_active_goals()
             self.cache_config()
         except:
-            logger.exception()
+            logger.exception('Error on saving goals')
 
     def pick_cam(self, *args, **kwargs):
         """
