@@ -14,7 +14,7 @@ from bluesky.plans import run_wrapper, stage_wrapper
 from pydm import Display
 from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
                               QCoreApplication,
-                              QPoint, QObject, QEvent)
+                              QObject, QEvent)
 from pydm.PyQt.QtGui import QDoubleValidator
 
 from pcdsdevices import sim
@@ -23,6 +23,8 @@ from pswalker.examples import patch_pims
 from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
 from pswalker.skywalker import lcls_RE, skywalker
+
+from .logger import GuiHandler
 
 logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
@@ -772,29 +774,6 @@ class SkywalkerGui(Display):
                          self.ui_filename())
 
 intelclass = SkywalkerGui # NOQA
-
-
-class GuiHandler(logging.Handler):
-    """
-    Logging handler that logs to a scrolling text widget.
-    """
-    terminator = '\n'
-
-    def __init__(self, text_widget, level=logging.NOTSET):
-        super().__init__(level=level)
-        self.text_widget = text_widget
-
-    def emit(self, record):
-        if self.text_widget is not None:
-            try:
-                msg = self.format(record)
-                cursor = self.text_widget.cursorForPosition(QPoint(0, 0))
-                cursor.insertText(msg + self.terminator)
-            except Exception:
-                self.handleError(record)
-
-    def close(self):
-        self.text_widget = None
 
 
 class PostInit(QObject):
