@@ -99,7 +99,7 @@ class ConfigReader:
         """
         return list(self.live_systems.keys())+list(sim_config.keys())
 
-    def get_subsystem(self, system, rotation=90, timeout=30):
+    def get_subsystem(self, system, rotation=90, timeout=30, use_cache=True):
         """
         Load the pcdsdevices corresponding to a system name
 
@@ -114,13 +114,16 @@ class ConfigReader:
         timeout : float, optional
             Timeout for devices
 
+        use_cache : bool, optional
+            Search the cache for previously loaded devices before instantiating
+            new ones. True by default
         Returns
         -------
         subsystem : dict
             Dictionary containing keys for mirror, imager, slits and rotation
         """
         #Reload previously accessed systems
-        if system in self.cache:
+        if system in self.cache and use_cache:
             logger.debug("Using cached devices for %s", system)
             return self.cache[system]
 
@@ -157,7 +160,7 @@ class ConfigReader:
                 logger.exception('Error loading device %s for %s',
                                  system, dev_type)
             #Cache system for quick recall
-            else:
+            finally:
                 self.cache[system] = system_objs
 
         return system_objs
