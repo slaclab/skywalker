@@ -16,8 +16,12 @@ install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
+  - conda install -n root conda-build=2.1.10
   #Grab all dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION coverage pip wheel happi ophyd==0.6.1 bluesky==0.9.0 pytest opencv=3.1 -c conda-forge -c lightsource2-tag -c skywalker-dev
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION coverage pip wheel happi ophyd==0.6.1 bluesky==0.9.0 pyqt==4.11.4 pytest opencv=3.1 -c conda-forge -c lightsource2-tag -c skywalker-dev
+  #Install PYDM, must be done this way while PYDM is not a package
+  - git clone https://github.com/slaclab/pydm.git
+  - conda develop pydm -n test-environment
   #Launch Conda environment
   - source activate test-environment
   #Install requiremetns
