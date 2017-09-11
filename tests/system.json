@@ -1,0 +1,14 @@
+{
+    "m1h": {
+        "mirror": "FEE M1H",
+        "imager": "HX2 PIM",
+        "slits": "HX2 Slits",
+        "rotation": 90
+    },
+    "m2h": {
+        "mirror": "FEE M2H",
+        "imager": "HFX DG3 PIM",
+        "slits": "HFX DG3 Slits",
+        "rotation": 90
+    }
+}
