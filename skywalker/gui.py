@@ -544,7 +544,8 @@ class SkywalkerGui(Display):
             def plan(img, slit, rot, output_obj):
                 rot_info = ad_stats_x_axis_rot(img, rot)
                 det_rbv = rot_info['key']
-                fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv)
+                fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv,
+                                             x_width=0.2)
                 output = yield from fidu
                 modifier = rot_info['mod_x']
                 if modifier is not None:
@@ -565,7 +566,7 @@ class SkywalkerGui(Display):
                 for img, fld in zip(self.imagers_padded(), self.goals_groups):
                     if img is not None:
                         try:
-                            fld.value = results[img.name]
+                            fld.value = round(results[img.name], 1)
                         except KeyError:
                             pass
         except:

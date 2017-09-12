@@ -43,14 +43,14 @@ def ad_stats_x_axis_rot(imager, rotation):
         mod_x = None
         mod_y = None
     elif rotation == 90:
-        mod_x = y_size.value
+        mod_x = x_size.value
         mod_y = None
     elif rotation == 180:
         mod_x = x_size.value
         mod_y = y_size.value
     else:
         mod_x = None
-        mod_y = x_size.value
+        mod_y = y_size.value
     return dict(key=det_key, mod_x=mod_x, mod_y=mod_y, x_cent=x_cent,
                 y_cent=y_cent, x_size=x_size, y_size=y_size)
 
