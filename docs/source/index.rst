@@ -58,11 +58,11 @@ above:
    :hidden:
    :caption: Core Skywalker Packages
 
-   happi/index.rst
-   lightpath/index.rst
-   pcds-devices/index.rst
-   pswalker/index.rst
-   psbeam/index.rst
+   happi <https://pswww.slac.stanford.edu/swdoc/releases/skywalker/happi/>
+   lightpath <https://pswww.slac.stanford.edu/swdoc/releases/skywalker/lightpath/>
+   pcds-devices <https://pswww.slac.stanford.edu/swdoc/releases/skywalker/pcds-devices/>
+   pswalker <https://pswww.slac.stanford.edu/swdoc/releases/skywalker/pswalker/>
+   psbeam <https://pswww.slac.stanford.edu/swdoc/releases/skywalker/psbeam/>
 
 .. toctree::
    :hidden:
@@ -75,8 +75,6 @@ above:
    :hidden:
    :caption: GitHub Links
 
-   SLAC Repositories <https://github.com/slaclab/>
-   PCDS Repositories <https://github.com/lcls-pcds/>
-   :maxdepth: 2
-   :caption: Contents:
+   SLAC <https://github.com/slaclab/>
+   PCDS <https://github.com/lcls-pcds/>
 
