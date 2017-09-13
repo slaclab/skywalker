@@ -1,8 +1,14 @@
 language: python
-python:
-  # We don't actually use the Travis Python, but this keeps it organized.
-  - "3.5"
-  - "3.6"
+sudo: false
+env:
+   global:
+     - secure: "t399QOE83FONpr3PslOu6E28TwJUr6Kywt8JYVae22JCp2l703KYru4Bw3VFOfJSv2A1BISrU5Q6z5xu8BU3qU9V9UtPX7r6iVnK/Jqhxh+jjLA2tglBDUfWLYABC27UgaqDyGs2b9K+q/5c1Fv7jUPiZ+a53ly7Zwg7pu679KvFhbhBhPooSGxkyY+OISNmNr2VF1E34BxzWEaqD0yqjX8DsJEvUjPRwhPxTCQ3h4+BahhXWVZD0+I64/ATvf/4dsjK5LJ9nQLWrgaK9zEklNOw4XHJDthCQ22s2Vx6VlCDmUeHQrGGtqOK2n0atPWr6tOGkRtu2r9RArUt92tcYWt8cUIBFGP18UBRvRBdYkhvqysIUgLA4TmbI/H0uMtHnmvJ3AVjb6oRLlfQWUwneMm+LcawdvVGmVh7Jbo3c7T6KUaL2YWkyUuoao2IshAhbB09OG5QYcIFAsB68COPhVoP9ck88+Z7QjpBGox9epJnBUYedTAyijX7e23XTOgTeSXKxv3tnYdVq8gLyjhcp2E53W3PplRjawAaCuyAgyFR14tniCV0Pc6XehPa2ANCLbuqWLCQZac5KyMQ4ENQMzWoIWD0+wGnaGdHLBDPcT0TZogE9uvdTbLMnhhQVRebXu3gbCDhWAzWTltU2QIyYBsCVGQMXmxDmo3zGHXJnBg="
+
+matrix:
+   include: 
+      - python: 3.5
+      - python: 3.6
+        env: BUILD_DOCS=1
 
 install:
   - sudo apt-get update
@@ -20,11 +26,11 @@ install:
   #Grab all dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION coverage pip wheel happi ophyd==0.6.1 bluesky==0.9.0 pyqt==4.11.4 pytest opencv=3.1 -c conda-forge -c lightsource2-tag -c skywalker-dev
   #Install PYDM, must be done this way while PYDM is not a package
-  - git clone https://github.com/slaclab/pydm.git
-  - conda develop pydm -n test-environment
+  - git clone https://github.com/slaclab/pydm.git ../pydm
+  - conda develop ../pydm -n test-environment
   #Launch Conda environment
   - source activate test-environment
-  #Install requiremetns
+  #Install requirements
   - pip install codecov
   - pip install -r requirements.txt
   #Install
@@ -33,6 +39,17 @@ install:
 script:
   - coverage run run_tests.py
   - coverage report -m
+  - set -e
+  #Build docs
+  - |
+    if [ $BUILD_DOCS ]; then
+      pip install -r doc-requirements.txt
+      pushd docs
+      make html
+      popd
+      #Publish docs.
+      doctr deploy --deploy-repo lcls-pcds/skywalker-docs --deploy-branch-name master .
+    fi
 
 after_success:
   - codecov
