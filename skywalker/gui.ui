@@ -45,8 +45,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1282</width>
-        <height>1002</height>
+        <width>1284</width>
+        <height>1004</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -82,6 +82,32 @@
                <number>0</number>
               </property>
               <item>
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_5">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
                <widget class="QComboBox" name="image_title_combo">
                 <property name="maximumSize">
                  <size>
@@ -97,6 +123,69 @@
                  </font>
                 </property>
                </widget>
+              </item>
+              <item>
+               <widget class="PyDMLabel" name="image_state">
+                <property name="font">
+                 <font>
+                  <family>Monospace</family>
+                  <pointsize>14</pointsize>
+                 </font>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="whatsThis">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="PyDMEnumComboBox" name="image_state_select">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Monospace</family>
+                  <pointsize>14</pointsize>
+                 </font>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="whatsThis">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
              </layout>
             </item>
@@ -897,6 +986,194 @@
                     <property name="alignment">
                      <set>Qt::AlignCenter</set>
                     </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="2">
+                   <widget class="PyDMLineEdit" name="slit_x_setpoint">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>80</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>80</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>Monospace</family>
+                      <pointsize>14</pointsize>
+                     </font>
+                    </property>
+                    <property name="toolTip">
+                     <string/>
+                    </property>
+                    <property name="whatsThis">
+                     <string>
+    Writeable text field to send and display channel values
+    </string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                    </property>
+                    <property name="showUnits" stdset="0">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="2">
+                   <widget class="PyDMLineEdit" name="slit_y_setpoint">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>80</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>80</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>Monospace</family>
+                      <pointsize>14</pointsize>
+                     </font>
+                    </property>
+                    <property name="toolTip">
+                     <string/>
+                    </property>
+                    <property name="whatsThis">
+                     <string>
+    Writeable text field to send and display channel values
+    </string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                    </property>
+                    <property name="showUnits" stdset="0">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="2">
+                   <widget class="QLabel" name="slit_set_label">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>Monospace</family>
+                      <pointsize>14</pointsize>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>Setpos</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QFrame" name="circle_size_hax_5">
+                    <property name="minimumSize">
+                     <size>
+                      <width>30</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>80</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::NoFrame</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Raised</enum>
+                    </property>
+                    <widget class="PyDMByteIndicator" name="slit_circle">
+                     <property name="geometry">
+                      <rect>
+                       <x>10</x>
+                       <y>-5</y>
+                       <width>58</width>
+                       <height>48</height>
+                      </rect>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>48</horstretch>
+                       <verstretch>48</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>48</width>
+                       <height>48</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <family>Monospace</family>
+                       <pointsize>14</pointsize>
+                      </font>
+                     </property>
+                     <property name="toolTip">
+                      <string/>
+                     </property>
+                     <property name="whatsThis">
+                      <string/>
+                     </property>
+                     <property name="onColor" stdset="0">
+                      <color>
+                       <red>100</red>
+                       <green>100</green>
+                       <blue>100</blue>
+                      </color>
+                     </property>
+                     <property name="offColor" stdset="0">
+                      <color>
+                       <red>255</red>
+                       <green>255</green>
+                       <blue>0</blue>
+                      </color>
+                     </property>
+                     <property name="showLabels" stdset="0">
+                      <bool>false</bool>
+                     </property>
+                     <property name="circles" stdset="0">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
                    </widget>
                   </item>
                  </layout>
@@ -2051,6 +2328,11 @@
    <class>PyDMLineEdit</class>
    <extends>QLineEdit</extends>
    <header>pydm.widgets.line_edit</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMEnumComboBox</class>
+   <extends>QWidget</extends>
+   <header>pydm.widgets.enum_combo_box</header>
   </customwidget>
   <customwidget>
    <class>PyDMByteIndicator</class>

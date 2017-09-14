@@ -294,18 +294,21 @@ class ImgObjWidget(ObjWidgetGroup):
     This also includes all of the centroid stuff.
     """
     def __init__(self, img_widget, img_obj, cent_x_widget, cent_y_widget,
-                 delta_x_widget, delta_y_widget, label, goals_source,
-                 rotation=0):
+                 delta_x_widget, delta_y_widget, state_widget,
+                 state_select_widget, label, goals_source, rotation=0):
         self.cent_x_widget = cent_x_widget
         self.cent_y_widget = cent_y_widget
         self.delta_x_widget = delta_x_widget
         self.delta_y_widget = delta_y_widget
+        self.state_widget = state_widget
+        self.state_select_widget = state_select_widget
         self.goals_source = goals_source
         self.xpos = 0
         self.ypos = 0
         attrs = ['detector.image2.width',
                  'detector.image2.array_data']
-        super().__init__([img_widget], attrs, img_obj, label=label,
+        super().__init__([img_widget, state_widget, state_select_widget],
+                         attrs, img_obj, label=label,
                          rotation=rotation)
 
     def setup(self, *, pvnames, name=None, rotation=0, **kwargs):
@@ -352,6 +355,18 @@ class ImgObjWidget(ObjWidgetGroup):
         img_widget.setImageChannel(image_channel)
         self.cent_x.subscribe(self.update_centroid)
         self.cent_y.subscribe(self.update_centroid)
+
+        state_read = self.obj.states.state._read_pv.pvname or ''
+        state_write = self.obj.states.state._write_pv.pvname or ''
+
+        try:
+            self.state_widget.setChannel(self.protocol + state_read)
+        except:
+            self.state_widget.channel = self.protocol + state_read
+        try:
+            self.state_select_widget.setChannel(self.protocol + state_write)
+        except:
+            self.state_select_widget.channel = self.protocol + state_write
 
     def update_centroid(self, *args, **kwargs):
         xpos = self.cent_x.value
