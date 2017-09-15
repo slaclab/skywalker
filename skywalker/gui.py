@@ -283,6 +283,11 @@ class SkywalkerGui(Display):
         close_dict = dict(RE=self.RE, console=console)
         self.destroyed.connect(partial(SkywalkerGui.on_close, close_dict))
 
+        # TODO remove this once PyDMEnumComboBox supports alarm borders
+        # For now, disable alarms on PyDMEnumComboBox
+        ui.image_state_select.alarm_style_sheet_map = {n: '{}' for n in
+                                                       range(5)}
+
         # Put out the initialization message.
         init_base = 'Skywalker GUI initialized in '
         if self.sim:
