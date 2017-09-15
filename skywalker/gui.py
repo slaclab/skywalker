@@ -143,9 +143,15 @@ class SkywalkerGui(Display):
 
         # Initialize slit readback
         self.slit_group = ObjWidgetGroup([ui.slit_x_width,
-                                          ui.slit_y_width],
+                                          ui.slit_y_width,
+                                          ui.slit_x_setpoint,
+                                          ui.slit_y_setpoint,
+                                          ui.slit_circle],
                                          ['xwidth.readback',
-                                          'ywidth.readback'],
+                                          'ywidth.readback',
+                                          'xwidth.setpoint',
+                                          'ywidth.setpoint',
+                                          'xwidth.done'],
                                          first_slit,
                                          label=ui.readback_slits_title)
 
@@ -196,6 +202,8 @@ class SkywalkerGui(Display):
         self.image_group = ImgObjWidget(ui.image, first_imager,
                                         ui.beam_x_value, ui.beam_y_value,
                                         ui.beam_x_delta, ui.beam_y_delta,
+                                        ui.image_state,
+                                        ui.image_state_select,
                                         ui.readback_imager_title,
                                         self, first_rotation)
         ui.image.setColorMapToPreset('jet')
@@ -545,7 +553,7 @@ class SkywalkerGui(Display):
                 rot_info = ad_stats_x_axis_rot(img, rot)
                 det_rbv = rot_info['key']
                 fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv,
-                                             x_width=0.2)
+                                             x_width=0.2, samples=100)
                 output = yield from fidu
                 modifier = rot_info['mod_x']
                 if modifier is not None:
