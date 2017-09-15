@@ -553,7 +553,7 @@ class SkywalkerGui(Display):
                 rot_info = ad_stats_x_axis_rot(img, rot)
                 det_rbv = rot_info['key']
                 fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv,
-                                             x_width=0.2)
+                                             x_width=0.2, samples=100)
                 output = yield from fidu
                 modifier = rot_info['mod_x']
                 if modifier is not None:
