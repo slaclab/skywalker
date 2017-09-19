@@ -33,41 +33,53 @@ class Setting:
 
     def __init__(self, name, default, required=True, enum=None):
         self.name = name
-        self.default = default
-        self.required = required
-        self.enum = enum
-        self.layout = QHBoxLayout()
         self.data_type = type(default)
+        self.config = 0
 
-        if required:
-            self.check = None
-        elif not required or default is in (True, False):
+        if not required or default in (True, False):
+            self.config += self.CHECK
+        if default not in (True, False):
+            if enum is None:
+                self.config += self.LINE
+            else:
+                self.config += self.COMBO
+
+        self.layout = QHBoxLayout()
+        if self.config & self.CHECK:
             self.check = QCheckBox()
             self.layout.add(self.check)
-        if default is not in (True, False):
-            if enum is None:
-                self.data = QLineEdit()
-                if self.data_type == int:
-                    self.data.setValidator(QIntValidator)
-                elif self.data_type == float:
-                    self.data.setValidator(QDoubleValidator)
-            else:
-                self.data = QComboBox()
-                for value in enum:
-                    self.data.addItem(str(value))
-            self.layout.add(self.data)
+        else:
+            self.check = None
+        if self.config == self.CHECK:
+            self.check.setText('Enabled')
+        if self.config & self.LINE:
+            self.data = QLineEdit()
+            if self.data_type == int:
+                self.data.setValidator(QIntValidator)
+            elif self.data_type == float:
+                self.data.setValidator(QDoubleValidator)
+        elif self.config & self.COMBO:
+            self.data = QComboBox()
+            for value in enum:
+                self.data.addItem(str(value))
+            if default is not None:
+                pass  # TODO: pick correct default combo box item
+        else:
+            self.data = None
 
     @property
     def value(self):
-        if self.check is not None:
-            if self.default is in (True, False):
-                return self.check.isChecked()
-            elif not self.check.isChecked():
+        if self.config == self.CHECK:
+            return self.check.isChecked()
+        elif self.config & self.CHECK:
+            if not self.check.isChecked():
                 return None
-        try:
+        if self.config & self.LINE:
             raw = self.data.text()
-        except AttributeError:
+        elif self.config & self.COMBO:
             raw = self.data.currentText()
+        else:
+            raw = None
         try:
             return self.data_type(raw)
         except Exception:
@@ -75,29 +87,24 @@ class Setting:
 
     @value.setter
     def value(self, val):
-        if self.default is in (True, False):
+        if self.config == self.CHECK:
             self.check.setChecked(bool(val))
             return
-        elif not self.required:
-            if val is None:
-                self.check.setChecked(False)
-                return
-            else:
-                self.check.setChecked(True)
-        try:
-            val = self.data_type(val)
-        except Exception:
-            pass
-        finally:
-            txt = str(val)
-        try:
-            self.data.setText(txt)
-        except AttributeError:
+        elif self.config & self.CHECK and val is None:
+            self.check.setChecked(False)
+            return
+        else:
             try:
-                index = self.enum.index(val)
-                self.data.setCurrentIndex(index)
+                val = self.data_type(val)
             except Exception:
                 pass
+            finally:
+                txt = str(val)
+            if self.config & self.LINE:
+                self.data.setText(txt)
+            elif self.config & self.COMBO:
+                index = self.enum.index(txt)
+                self.data.setCurrentIndex(index)
 
 
 class SettingsGroup:
