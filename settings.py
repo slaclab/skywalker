@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+
 from pydm.PyQt.QtGui import (QMainWindow, QFormLayout, QHBoxLayout,
                              QLineEdit, QComboBox, QCheckBox,
                              QIntValidator, QDoubleValidator)
+
+logger = logging.getLogger(__name__)
 
 
 class Setting:
@@ -27,6 +31,7 @@ class Setting:
             Chosen if required=False and default is non-boolean
             If the checkbox is unchecked, the value is None
     """
+    NO_CONFIG = 0
     CHECK = 1
     LINE = 2
     COMBO = 4
@@ -34,7 +39,7 @@ class Setting:
     def __init__(self, name, default, required=True, enum=None):
         self.name = name
         self.data_type = type(default)
-        self.config = 0
+        self.config = self.NO_CONFIG
 
         if not required or default in (True, False):
             self.config += self.CHECK
@@ -67,6 +72,14 @@ class Setting:
         else:
             self.data = None
 
+        if self.check is not None and self.data is not None:
+            self.check.toggled.connect(self.data.setEnabled)
+        if self.check is not None:
+            if default in (None, False):
+                self.check.setChecked(False)
+            else:
+                self.check.setChecked(True)
+
     @property
     def value(self):
         if self.config == self.CHECK:
@@ -97,7 +110,8 @@ class Setting:
             try:
                 val = self.data_type(val)
             except Exception:
-                pass
+                logger.exception('Invalid data type')
+                return
             finally:
                 txt = str(val)
             if self.config & self.LINE:
