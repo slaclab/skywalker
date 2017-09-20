@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from pydm.PyQt.QtGui import (QMainWindow,
+from pydm.PyQt.QtGui import (QWidget,
                              QFormLayout, QHBoxLayout, QVBoxLayout,
                              QLabel, QLineEdit, QComboBox, QCheckBox,
                              QIntValidator, QDoubleValidator)
@@ -53,7 +53,7 @@ class Setting:
         self.layout = QHBoxLayout()
         if self.config & self.CHECK:
             self.check = QCheckBox()
-            self.layout.add(self.check)
+            self.layout.addWidget(self.check)
         else:
             self.check = None
         if self.config == self.CHECK:
@@ -61,9 +61,9 @@ class Setting:
         if self.config & self.LINE:
             self.data = QLineEdit()
             if self.data_type == int:
-                self.data.setValidator(QIntValidator)
+                self.data.setValidator(QIntValidator())
             elif self.data_type == float:
-                self.data.setValidator(QDoubleValidator)
+                self.data.setValidator(QDoubleValidator())
         elif self.config & self.COMBO:
             self.data = QComboBox()
             for value in enum:
@@ -135,20 +135,20 @@ class SettingsGroup:
             Mapping of header to list of Setting objects
         """
         self.settings = {}
-        self.window = QMainWindow()
+        self.window = QWidget()
         layout = QHBoxLayout()
         self.window.setLayout(layout)
         if collumns is None:
             collumns = [list(settings.keys())]
         for col in collumns:
             col_layout = QVBoxLayout()
-            layout.addWidget(col_layout)
+            layout.addLayout(col_layout)
             for header in col:
                 title = QLabel()
                 title.setText(header.capitalize())
                 col_layout.addWidget(title)
                 form = QFormLayout()
-                col_layout.addWidget(form)
+                col_layout.addLayout(form)
                 for setting in settings[header]:
                     self.settings[setting.name] = setting
                     label = QLabel()
