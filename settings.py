@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from pydm.PyQt.QtGui import (QMainWindow, QFormLayout, QHBoxLayout,
-                             QLineEdit, QComboBox, QCheckBox,
+from pydm.PyQt.QtGui import (QMainWindow,
+                             QFormLayout, QHBoxLayout, QVBoxLayout,
+                             QLabel, QLineEdit, QComboBox, QCheckBox,
                              QIntValidator, QDoubleValidator)
 
 logger = logging.getLogger(__name__)
@@ -122,5 +123,47 @@ class Setting:
 
 
 class SettingsGroup:
-    def __init__(self, **kwargs):
-        pass
+    def __init__(self, collumns=None, **settings):
+        """
+        Parameters
+        ----------
+        collumns: list, optional
+            List of lists of headers included in each collumn
+            The list at index 0 will be the first collumn, etc.
+
+        settings: kwargs
+            Mapping of header to list of Setting objects
+        """
+        self.settings = {}
+        self.window = QMainWindow()
+        layout = QHBoxLayout()
+        self.window.setLayout(layout)
+        if collumns is None:
+            collumns = [list(settings.keys())]
+        for col in collumns:
+            col_layout = QVBoxLayout()
+            layout.addWidget(col_layout)
+            for header in col:
+                title = QLabel()
+                title.setText(header.capitalize())
+                col_layout.addWidget(title)
+                form = QFormLayout()
+                col_layout.addWidget(form)
+                for setting in settings[header]:
+                    self.settings[setting.name] = setting
+                    label = QLabel()
+                    label.setText(setting.name.capitalize())
+                    form.addRow(label, setting.layout)
+
+    @property
+    def values(self):
+        return {n: s.value for n, s in self.settings.items()}
+
+    @values.setter
+    def values(self, set_dict):
+        for k, v in set_dict.items():
+            if k in self.settings:
+                self.settings[k].value = v
+
+    def show(self):
+        self.window.show()
