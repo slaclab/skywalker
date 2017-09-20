@@ -25,6 +25,7 @@ from pswalker.skywalker import lcls_RE, skywalker
 
 from skywalker.logger import GuiHandler
 from skywalker.utils import ad_stats_x_axis_rot
+from skywalker.settings import Setting, SettingsGroup
 from skywalker.widgetgroup import (ObjWidgetGroup, ValueWidgetGroup,
                                    ImgObjWidget)
 
@@ -208,6 +209,24 @@ class SkywalkerGui(Display):
                                         self, first_rotation)
         ui.image.setColorMapToPreset('jet')
 
+        # Initialize the settings window.
+        first_step = Setting('first_step', 6)
+        tolerance = Setting('tolerance', 5)
+        averages = Setting('averages', 100)
+        timeout = Setting('timeout', 600)
+        tol_scaling = Setting('tol_scaling', 8)
+        min_beam = Setting('min_beam', 1, required=False)
+        min_rate = Setting('min_rate', 1, required=False)
+        slit_width = Setting('slit_width', 0.2)
+        samples = Setting('samples', 100)
+        close_fee_att = Setting('close_fee_att', True)
+        self.settings = SettingsGroup(
+            collumns=[['alignment'], ['slits', 'suspenders', 'setup']],
+            alignment=[first_step, tolerance, averages, timeout, tol_scaling],
+            suspenders=[min_beam, min_rate],
+            slits=[slit_width, samples],
+            setup=[close_fee_att])
+
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
         if self.sim:
@@ -255,6 +274,9 @@ class SkywalkerGui(Display):
 
         save_goals_pressed = ui.save_goals_button.clicked
         save_goals_pressed.connect(self.on_save_goals_button)
+
+        settings_pressed = ui.settings_button.clicked
+        settings_pressed.connect(self.on_settings_button)
 
         # Set up automatic camera switching
         self.auto_switch_cam = False
@@ -599,6 +621,13 @@ class SkywalkerGui(Display):
             self.cache_config()
         except:
             logger.exception('Error on saving goals')
+
+    @pyqtSlot()
+    def on_settings_button(self):
+        try:
+            self.settings.show()
+        except:
+            logger.exception('Error on opening settings')
 
     def pick_cam(self, *args, **kwargs):
         """
