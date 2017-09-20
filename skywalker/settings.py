@@ -42,9 +42,9 @@ class Setting:
         self.data_type = type(default)
         self.config = self.NO_CONFIG
 
-        if not required or default in (True, False):
+        if not required or isinstance(default, bool):
             self.config += self.CHECK
-        if default not in (True, False):
+        if not isinstance(default, bool):
             if enum is None:
                 self.config += self.LINE
             else:
@@ -60,16 +60,19 @@ class Setting:
             self.check.setText('Enabled')
         if self.config & self.LINE:
             self.data = QLineEdit()
+            self.data.setText(str(default))
             if self.data_type == int:
                 self.data.setValidator(QIntValidator())
             elif self.data_type == float:
                 self.data.setValidator(QDoubleValidator())
+            self.layout.addWidget(self.data)
         elif self.config & self.COMBO:
             self.data = QComboBox()
             for value in enum:
                 self.data.addItem(str(value))
             if default is not None:
                 pass  # TODO: pick correct default combo box item
+            self.layout.addWidget(self.data)
         else:
             self.data = None
 
