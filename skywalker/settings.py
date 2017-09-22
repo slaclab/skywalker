@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from pydm.PyQt.QtGui import (QWidget,
+from pydm.PyQt.QtCore import Qt
+from pydm.PyQt.QtGui import (QWidget, QSpacerItem, QSizePolicy,
                              QFormLayout, QHBoxLayout, QVBoxLayout,
                              QLabel, QLineEdit, QComboBox, QCheckBox,
                              QIntValidator, QDoubleValidator)
@@ -141,6 +142,8 @@ class SettingsGroup:
         self.window = QWidget()
         layout = QHBoxLayout()
         self.window.setLayout(layout)
+        self.window.setSizePolicy(QSizePolicy.Minimum,
+                                  QSizePolicy.Minimum)
         if collumns is None:
             collumns = [list(settings.keys())]
         for col in collumns:
@@ -149,6 +152,7 @@ class SettingsGroup:
             for header in col:
                 title = QLabel()
                 title.setText(header.capitalize())
+                title.setAlignment(Qt.AlignCenter)
                 col_layout.addWidget(title)
                 form = QFormLayout()
                 col_layout.addLayout(form)
@@ -156,7 +160,13 @@ class SettingsGroup:
                     self.settings[setting.name] = setting
                     label = QLabel()
                     label.setText(setting.name.capitalize())
+                    label.setSizePolicy(QSizePolicy.Minimum,
+                                        QSizePolicy.Minimum)
                     form.addRow(label, setting.layout)
+            vertical_spacer = QSpacerItem(20, 40,
+                                          QSizePolicy.Minimum,
+                                          QSizePolicy.Expanding)
+            col_layout.addItem(vertical_spacer)
 
     @property
     def values(self):
