@@ -642,7 +642,6 @@ class SkywalkerGui(Display):
     @pyqtSlot()
     def on_settings_button(self):
         try:
-            logger.info('Settings %s', self.settings_cache)
             pos = self.settings_button.mapToGlobal(self.settings_button.pos())
             dialog_return = self.settings.dialog_at(pos)
             if dialog_return == QDialog.Accepted:
@@ -652,7 +651,6 @@ class SkywalkerGui(Display):
             elif dialog_return == QDialog.Rejected:
                 self.restore_settings()
                 logger.info('Changes to settings cancelled.')
-            logger.info('Settings %s', self.settings_cache)
         except:
             logger.exception('Error on opening settings')
 
@@ -664,10 +662,10 @@ class SkywalkerGui(Display):
         min_beam = self.settings_cache['min_beam']
         min_rate = self.settings_cache['min_rate']
         if min_beam is not None:
-            self.RE.add_suspender(BeamEnergySuspendFloor(min_beam, sleep=5,
-                                                         averages=100))
+            self.RE.install_suspender(BeamEnergySuspendFloor(min_beam, sleep=5,
+                                                             averages=100))
         if min_rate is not None:
-            self.RE.add_suspender(BeamRateSuspendFloor(min_rate, sleep=5))
+            self.RE.install_suspender(BeamRateSuspendFloor(min_rate, sleep=5))
 
     def fee_att(self):
         try:
