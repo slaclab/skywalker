@@ -18,10 +18,13 @@ from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
 from pydm.PyQt.QtGui import QDoubleValidator, QDialog
 
 from pcdsdevices import sim
+from pcdsdevices.epics.attenuator import FeeAtt
 from pswalker.examples import patch_pims
 from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
-from pswalker.skywalker import lcls_RE, skywalker
+from pswalker.suspenders import (BeamEnergySuspendFloor,
+                                 BeamRateSuspendFloor)
+from pswalker.skywalker import skywalker
 
 from skywalker.logger import GuiHandler
 from skywalker.utils import ad_stats_x_axis_rot
@@ -233,10 +236,7 @@ class SkywalkerGui(Display):
 
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
-        if self.sim:
-            self.RE = RunEngine({})
-        else:
-            self.RE = lcls_RE()
+        self.RE = RunEngine({})
         install_qt_kicker()
 
         # Some hax to keep the state string updated
@@ -498,11 +498,17 @@ class SkywalkerGui(Display):
                         if modifier is not None:
                             goal = modifier - goal
                         goals.append(goal)
-                    first_steps = 6
-                    tolerances = 5
-                    average = 100
-                    timeout = 600
-                    tol_scaling = 8
+                    first_steps = self.settings_cache['first_step']
+                    tolerances = self.settings_cache['tolerance']
+                    average = self.settings_cache['averages']
+                    timeout = self.settings_cache['timeout']
+                    tol_scaling = self.settings_cache['tol_scaling']
+
+                    extra_stage = []
+                    close_fee_att = self.settings_cache['close_fee_att']
+                    if close_fee_att and not self.sim:
+                        extra_stage.append(self.fee_att())
+
                     # Temporary fix: undo skywalker's goal mangling.
                     # TODO remove goal mangling from skywalker.
                     goals = [480 - g for g in goals]
@@ -511,7 +517,9 @@ class SkywalkerGui(Display):
                                      tolerances=tolerances,
                                      averages=average, timeout=timeout,
                                      sim=self.sim, use_filters=not self.sim,
-                                     tol_scaling=tol_scaling)
+                                     tol_scaling=tol_scaling,
+                                     extra_stage=extra_stage)
+                    self.initialize_RE()
                     self.RE(plan)
             elif self.RE.state == 'paused':
                 logger.info("Resuming procedure.")
@@ -575,11 +583,16 @@ class SkywalkerGui(Display):
 
             self.auto_switch_cam = True
 
-            def plan(img, slit, rot, output_obj):
+            slit_width = self.settings_cache['slit_width']
+            samples = self.settings_cache['samples']
+
+            def plan(img, slit, rot, output_obj, slit_width=slit_width,
+                     samples=samples):
                 rot_info = ad_stats_x_axis_rot(img, rot)
                 det_rbv = rot_info['key']
                 fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv,
-                                             x_width=0.2, samples=100)
+                                             x_width=slit_width,
+                                             samples=samples)
                 output = yield from fidu
                 modifier = rot_info['mod_x']
                 if modifier is not None:
@@ -642,6 +655,27 @@ class SkywalkerGui(Display):
             logger.info('Settings %s', self.settings_cache)
         except:
             logger.exception('Error on opening settings')
+
+    def initialize_RE(self):
+        """
+        Set up the RunEngine for the current cached settings.
+        """
+        self.RE.clear_suspenders()
+        min_beam = self.settings_cache['min_beam']
+        min_rate = self.settings_cache['min_rate']
+        if min_beam is not None:
+            self.RE.add_suspender(BeamEnergySuspendFloor(min_beam, sleep=5,
+                                                         averages=100))
+        if min_rate is not None:
+            self.RE.add_suspender(BeamRateSuspendFloor(min_rate, sleep=5))
+
+    def fee_att(self):
+        try:
+            att = self._fee_att
+        except AttributeError:
+            att = FeeAtt()
+            self._fee_att = att
+        return att
 
     def cache_settings(self):
         """
