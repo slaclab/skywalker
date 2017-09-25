@@ -972,7 +972,7 @@
                     <property name="alignment">
                      <set>Qt::AlignCenter</set>
                     </property>
-                    <property name="precision">
+                    <property name="precision" stdset="0">
                      <number>3</number>
                     </property>
                    </widget>
@@ -1006,7 +1006,7 @@
                     <property name="alignment">
                      <set>Qt::AlignCenter</set>
                     </property>
-                    <property name="precision">
+                    <property name="precision" stdset="0">
                      <number>3</number>
                     </property>
                    </widget>
@@ -1395,14 +1395,14 @@
                     <property name="whatsThis">
                      <string/>
                     </property>
-                    <property name="userDefinedPrecision" stdset="0">
-                     <bool>true</bool>
+                    <property name="precision" stdset="0">
+                     <number>3</number>
                     </property>
                     <property name="showUnits" stdset="0">
                      <bool>true</bool>
                     </property>
-                    <property name="precision">
-                     <number>3</number>
+                    <property name="userDefinedPrecision" stdset="0">
+                     <bool>true</bool>
                     </property>
                    </widget>
                   </item>
@@ -1432,14 +1432,14 @@
                     <property name="whatsThis">
                      <string/>
                     </property>
-                    <property name="userDefinedPrecision" stdset="0">
-                     <bool>true</bool>
+                    <property name="precision" stdset="0">
+                     <number>3</number>
                     </property>
                     <property name="showUnits" stdset="0">
                      <bool>true</bool>
                     </property>
-                    <property name="precision">
-                     <number>3</number>
+                    <property name="userDefinedPrecision" stdset="0">
+                     <bool>true</bool>
                     </property>
                    </widget>
                   </item>
@@ -1501,14 +1501,14 @@
                     <property name="whatsThis">
                      <string/>
                     </property>
-                    <property name="userDefinedPrecision" stdset="0">
-                     <bool>true</bool>
+                    <property name="precision" stdset="0">
+                     <number>3</number>
                     </property>
                     <property name="showUnits" stdset="0">
                      <bool>true</bool>
                     </property>
-                    <property name="precision">
-                     <number>3</number>
+                    <property name="userDefinedPrecision" stdset="0">
+                     <bool>true</bool>
                     </property>
                    </widget>
                   </item>
@@ -1626,14 +1626,14 @@
                     <property name="whatsThis">
                      <string/>
                     </property>
-                    <property name="userDefinedPrecision" stdset="0">
-                     <bool>true</bool>
+                    <property name="precision" stdset="0">
+                     <number>3</number>
                     </property>
                     <property name="showUnits" stdset="0">
                      <bool>true</bool>
                     </property>
-                    <property name="precision">
-                     <number>3</number>
+                    <property name="userDefinedPrecision" stdset="0">
+                     <bool>true</bool>
                     </property>
                    </widget>
                   </item>
@@ -2366,6 +2366,16 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>PyDMByteIndicator</class>
+   <extends>QWidget</extends>
+   <header>pydm.widgets.byte</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMEnumComboBox</class>
+   <extends>QFrame</extends>
+   <header>pydm.widgets.enum_combo_box</header>
+  </customwidget>
+  <customwidget>
    <class>PyDMImageView</class>
    <extends>QWidget</extends>
    <header>pydm.widgets.image</header>
@@ -2379,16 +2389,6 @@
    <class>PyDMLineEdit</class>
    <extends>QLineEdit</extends>
    <header>pydm.widgets.line_edit</header>
-  </customwidget>
-  <customwidget>
-   <class>PyDMEnumComboBox</class>
-   <extends>QWidget</extends>
-   <header>pydm.widgets.enum_combo_box</header>
-  </customwidget>
-  <customwidget>
-   <class>PyDMByteIndicator</class>
-   <extends>QWidget</extends>
-   <header>pydm.widgets.byte</header>
   </customwidget>
  </customwidgets>
  <resources/>
