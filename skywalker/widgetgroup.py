@@ -356,17 +356,22 @@ class ImgObjWidget(ObjWidgetGroup):
         self.cent_x.subscribe(self.update_centroid)
         self.cent_y.subscribe(self.update_centroid)
 
-        state_read = self.obj.states.state._read_pv.pvname or ''
-        state_write = self.obj.states.state._write_pv.pvname or ''
+        try:
+            state_read = self.obj.states.state._read_pv.pvname or ''
+            state_write = self.obj.states.state._write_pv.pvname or ''
+        except AttributeError:
+            state_read = ''
+            state_write = ''
 
-        try:
-            self.state_widget.setChannel(self.protocol + state_read)
-        except:
-            self.state_widget.channel = self.protocol + state_read
-        try:
-            self.state_select_widget.setChannel(self.protocol + state_write)
-        except:
-            self.state_select_widget.channel = self.protocol + state_write
+        if len(state_read) > 0 and len(state_write) > 0:
+            try:
+                self.state_widget.setChannel(self.protocol + state_read)
+            except:
+                self.state_widget.channel = self.protocol + state_read
+            try:
+                self.state_select_widget.setChannel(self.protocol + state_write)
+            except:
+                self.state_select_widget.channel = self.protocol + state_write
 
     def update_centroid(self, *args, **kwargs):
         xpos = self.cent_x.value

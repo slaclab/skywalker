@@ -15,16 +15,20 @@ from pydm import Display
 from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
                               QCoreApplication,
                               QObject, QEvent)
-from pydm.PyQt.QtGui import QDoubleValidator
+from pydm.PyQt.QtGui import QDoubleValidator, QDialog
 
 from pcdsdevices import sim
+from pcdsdevices.epics.attenuator import FeeAtt
 from pswalker.examples import patch_pims
 from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
-from pswalker.skywalker import lcls_RE, skywalker
+from pswalker.suspenders import (BeamEnergySuspendFloor,
+                                 BeamRateSuspendFloor)
+from pswalker.skywalker import skywalker
 
 from skywalker.logger import GuiHandler
 from skywalker.utils import ad_stats_x_axis_rot
+from skywalker.settings import Setting, SettingsGroup
 from skywalker.widgetgroup import (ObjWidgetGroup, ValueWidgetGroup,
                                    ImgObjWidget)
 
@@ -208,12 +212,31 @@ class SkywalkerGui(Display):
                                         self, first_rotation)
         ui.image.setColorMapToPreset('jet')
 
+        # Initialize the settings window.
+        first_step = Setting('first_step', 6)
+        tolerance = Setting('tolerance', 5)
+        averages = Setting('averages', 100)
+        timeout = Setting('timeout', 600)
+        tol_scaling = Setting('tol_scaling', 8)
+        min_beam = Setting('min_beam', 1, required=False)
+        min_rate = Setting('min_rate', 1, required=False)
+        slit_width = Setting('slit_width', 0.2)
+        samples = Setting('samples', 100)
+        close_fee_att = Setting('close_fee_att', True)
+        self.settings = SettingsGroup(
+            parent=self,
+            collumns=[['alignment'], ['slits', 'suspenders', 'setup']],
+            alignment=[first_step, tolerance, averages, timeout, tol_scaling],
+            suspenders=[min_beam, min_rate],
+            slits=[slit_width, samples],
+            setup=[close_fee_att])
+        self.settings_cache = {}
+        self.load_settings()
+        self.restore_settings()
+
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
-        if self.sim:
-            self.RE = RunEngine({})
-        else:
-            self.RE = lcls_RE()
+        self.RE = RunEngine({})
         install_qt_kicker()
 
         # Some hax to keep the state string updated
@@ -255,6 +278,9 @@ class SkywalkerGui(Display):
 
         save_goals_pressed = ui.save_goals_button.clicked
         save_goals_pressed.connect(self.on_save_goals_button)
+
+        settings_pressed = ui.settings_button.clicked
+        settings_pressed.connect(self.on_settings_button)
 
         # Set up automatic camera switching
         self.auto_switch_cam = False
@@ -472,11 +498,17 @@ class SkywalkerGui(Display):
                         if modifier is not None:
                             goal = modifier - goal
                         goals.append(goal)
-                    first_steps = 6
-                    tolerances = 5
-                    average = 100
-                    timeout = 600
-                    tol_scaling = 8
+                    first_steps = self.settings_cache['first_step']
+                    tolerances = self.settings_cache['tolerance']
+                    average = self.settings_cache['averages']
+                    timeout = self.settings_cache['timeout']
+                    tol_scaling = self.settings_cache['tol_scaling']
+
+                    extra_stage = []
+                    close_fee_att = self.settings_cache['close_fee_att']
+                    if close_fee_att and not self.sim:
+                        extra_stage.append(self.fee_att())
+
                     # Temporary fix: undo skywalker's goal mangling.
                     # TODO remove goal mangling from skywalker.
                     goals = [480 - g for g in goals]
@@ -485,7 +517,9 @@ class SkywalkerGui(Display):
                                      tolerances=tolerances,
                                      averages=average, timeout=timeout,
                                      sim=self.sim, use_filters=not self.sim,
-                                     tol_scaling=tol_scaling)
+                                     tol_scaling=tol_scaling,
+                                     extra_stage=extra_stage)
+                    self.initialize_RE()
                     self.RE(plan)
             elif self.RE.state == 'paused':
                 logger.info("Resuming procedure.")
@@ -549,11 +583,16 @@ class SkywalkerGui(Display):
 
             self.auto_switch_cam = True
 
-            def plan(img, slit, rot, output_obj):
+            slit_width = self.settings_cache['slit_width']
+            samples = self.settings_cache['samples']
+
+            def plan(img, slit, rot, output_obj, slit_width=slit_width,
+                     samples=samples):
                 rot_info = ad_stats_x_axis_rot(img, rot)
                 det_rbv = rot_info['key']
                 fidu = slit_scan_fiducialize(slit, img, centroid=det_rbv,
-                                             x_width=0.2, samples=100)
+                                             x_width=slit_width,
+                                             samples=samples)
                 output = yield from fidu
                 modifier = rot_info['mod_x']
                 if modifier is not None:
@@ -599,6 +638,66 @@ class SkywalkerGui(Display):
             self.cache_config()
         except:
             logger.exception('Error on saving goals')
+
+    @pyqtSlot()
+    def on_settings_button(self):
+        try:
+            pos = self.settings_button.mapToGlobal(self.settings_button.pos())
+            dialog_return = self.settings.dialog_at(pos)
+            if dialog_return == QDialog.Accepted:
+                self.cache_settings()
+                self.save_settings()
+                logger.info('Settings saved.')
+            elif dialog_return == QDialog.Rejected:
+                self.restore_settings()
+                logger.info('Changes to settings cancelled.')
+        except:
+            logger.exception('Error on opening settings')
+
+    def initialize_RE(self):
+        """
+        Set up the RunEngine for the current cached settings.
+        """
+        self.RE.clear_suspenders()
+        min_beam = self.settings_cache['min_beam']
+        min_rate = self.settings_cache['min_rate']
+        if min_beam is not None:
+            self.RE.install_suspender(BeamEnergySuspendFloor(min_beam, sleep=5,
+                                                             averages=100))
+        if min_rate is not None:
+            self.RE.install_suspender(BeamRateSuspendFloor(min_rate, sleep=5))
+
+    def fee_att(self):
+        try:
+            att = self._fee_att
+        except AttributeError:
+            att = FeeAtt()
+            self._fee_att = att
+        return att
+
+    def cache_settings(self):
+        """
+        Pull settings from the settings object to the local cache.
+        """
+        self.settings_cache = self.settings.values
+
+    def restore_settings(self):
+        """
+        Push settings from the local cache into the settings object.
+        """
+        self.settings.values = self.settings_cache
+
+    def save_settings(self):
+        """
+        Write settings from the local cache to disk.
+        """
+        pass
+
+    def load_settings(self):
+        """
+        Load settings from disk to the local cache.
+        """
+        pass
 
     def pick_cam(self, *args, **kwargs):
         """
