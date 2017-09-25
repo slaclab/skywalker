@@ -3,9 +3,10 @@
 import logging
 
 from pydm.PyQt.QtCore import Qt
-from pydm.PyQt.QtGui import (QWidget, QSpacerItem, QSizePolicy,
+from pydm.PyQt.QtGui import (QDialog, QSpacerItem, QSizePolicy,
                              QFormLayout, QHBoxLayout, QVBoxLayout,
                              QLabel, QLineEdit, QComboBox, QCheckBox,
+                             QPushButton,
                              QIntValidator, QDoubleValidator)
 
 logger = logging.getLogger(__name__)
@@ -127,7 +128,7 @@ class Setting:
 
 
 class SettingsGroup:
-    def __init__(self, collumns=None, **settings):
+    def __init__(self, parent=None, collumns=None, **settings):
         """
         Parameters
         ----------
@@ -139,16 +140,18 @@ class SettingsGroup:
             Mapping of header to list of Setting objects
         """
         self.settings = {}
-        self.window = QWidget()
-        layout = QHBoxLayout()
-        self.window.setLayout(layout)
+        self.window = QDialog(parent=parent)
+        main_layout = QVBoxLayout()
+        self.window.setLayout(main_layout)
         self.window.setSizePolicy(QSizePolicy.Minimum,
                                   QSizePolicy.Minimum)
+        all_cols_layout = QHBoxLayout()
+        main_layout.addLayout(all_cols_layout)
         if collumns is None:
             collumns = [list(settings.keys())]
         for col in collumns:
             col_layout = QVBoxLayout()
-            layout.addLayout(col_layout)
+            all_cols_layout.addLayout(col_layout)
             for header in col:
                 title = QLabel()
                 title.setText(header.capitalize())
@@ -163,10 +166,22 @@ class SettingsGroup:
                     label.setSizePolicy(QSizePolicy.Minimum,
                                         QSizePolicy.Minimum)
                     form.addRow(label, setting.layout)
-            vertical_spacer = QSpacerItem(20, 40,
+            vertical_spacer = QSpacerItem(20, 10,
                                           QSizePolicy.Minimum,
                                           QSizePolicy.Expanding)
             col_layout.addItem(vertical_spacer)
+        confirm_layout = QHBoxLayout()
+        main_layout.addLayout(confirm_layout)
+        horizontal_spacer = QSpacerItem(40, 20,
+                                        QSizePolicy.Expanding,
+                                        QSizePolicy.Minimum)
+        cancel_button = QPushButton('Cancel')
+        cancel_button.pressed.connect(self.window.reject)
+        apply_button = QPushButton('Apply')
+        apply_button.pressed.connect(self.window.accept)
+        confirm_layout.addItem(horizontal_spacer)
+        confirm_layout.addWidget(cancel_button)
+        confirm_layout.addWidget(apply_button)
 
     @property
     def values(self):
@@ -178,5 +193,7 @@ class SettingsGroup:
             if k in self.settings:
                 self.settings[k].value = v
 
-    def show(self):
+    def dialog_at(self, *args, **kwargs):
+        self.window.move(*args, **kwargs)
         self.window.show()
+        return self.window.exec_()

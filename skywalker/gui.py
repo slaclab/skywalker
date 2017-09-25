@@ -15,7 +15,7 @@ from pydm import Display
 from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
                               QCoreApplication,
                               QObject, QEvent)
-from pydm.PyQt.QtGui import QDoubleValidator
+from pydm.PyQt.QtGui import QDoubleValidator, QDialog
 
 from pcdsdevices import sim
 from pswalker.examples import patch_pims
@@ -221,11 +221,15 @@ class SkywalkerGui(Display):
         samples = Setting('samples', 100)
         close_fee_att = Setting('close_fee_att', True)
         self.settings = SettingsGroup(
+            parent=self,
             collumns=[['alignment'], ['slits', 'suspenders', 'setup']],
             alignment=[first_step, tolerance, averages, timeout, tol_scaling],
             suspenders=[min_beam, min_rate],
             slits=[slit_width, samples],
             setup=[close_fee_att])
+        self.settings_cache = {}
+        self.load_settings()
+        self.restore_settings()
 
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
@@ -625,9 +629,43 @@ class SkywalkerGui(Display):
     @pyqtSlot()
     def on_settings_button(self):
         try:
-            self.settings.show()
+            logger.info('Settings %s', self.settings_cache)
+            pos = self.settings_button.mapToGlobal(self.settings_button.pos())
+            dialog_return = self.settings.dialog_at(pos)
+            if dialog_return == QDialog.Accepted:
+                self.cache_settings()
+                self.save_settings()
+                logger.info('Settings saved.')
+            elif dialog_return == QDialog.Rejected:
+                self.restore_settings()
+                logger.info('Changes to settings cancelled.')
+            logger.info('Settings %s', self.settings_cache)
         except:
             logger.exception('Error on opening settings')
+
+    def cache_settings(self):
+        """
+        Pull settings from the settings object to the local cache.
+        """
+        self.settings_cache = self.settings.values
+
+    def restore_settings(self):
+        """
+        Push settings from the local cache into the settings object.
+        """
+        self.settings.values = self.settings_cache
+
+    def save_settings(self):
+        """
+        Write settings from the local cache to disk.
+        """
+        pass
+
+    def load_settings(self):
+        """
+        Load settings from disk to the local cache.
+        """
+        pass
 
     def pick_cam(self, *args, **kwargs):
         """
