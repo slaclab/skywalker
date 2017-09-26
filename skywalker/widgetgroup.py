@@ -339,8 +339,6 @@ class ImgObjWidget(ObjWidgetGroup):
                       padding=0.0)
         view.setLimits(xMin=0, xMax=self.raw_size_x,
                        yMin=0, yMax=self.raw_size_y)
-        img_widget.resetImageChannel()
-        img_widget.resetWidthChannel()
         img_widget.setMinimumWidth(self.size_x)
         img_widget.setMinimumHeight(self.size_y)
         if width_pv is None:
@@ -351,8 +349,8 @@ class ImgObjWidget(ObjWidgetGroup):
             image_channel = ''
         else:
             image_channel = self.protocol + image_pv
-        img_widget.setWidthChannel(width_channel)
-        img_widget.setImageChannel(image_channel)
+        img_widget.widthChannel = width_channel
+        img_widget.imageChannel = image_channel
         self.cent_x.subscribe(self.update_centroid)
         self.cent_y.subscribe(self.update_centroid)
 
