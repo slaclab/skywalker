@@ -126,6 +126,7 @@ class SkywalkerGui(Display):
         # Load system and alignments into the combo box objects
         ui.image_title_combo.clear()
         ui.procedure_combo.clear()
+        ui.procedure_combo.addItem('None')
         self.all_imager_names = [entry['imager'].name for
                                  entry in self.system.values()]
         for imager_name in self.all_imager_names:
@@ -142,7 +143,7 @@ class SkywalkerGui(Display):
         first_rotation = first_set.get('rotation', 0)
 
         # self.procedure and self.image_obj keep track of the gui state
-        self.procedure = first_alignment_name
+        self.procedure = 'None'
         self.image_obj = first_imager
 
         # Initialize slit readback
@@ -233,6 +234,7 @@ class SkywalkerGui(Display):
         self.settings_cache = {}
         self.load_settings()
         self.restore_settings()
+        self.cache_settings()  # Required in case nothing is loaded
 
         # Create the RunEngine that will be used in the alignments.
         # This gives us the ability to pause, etc.
@@ -412,6 +414,8 @@ class SkywalkerGui(Display):
         try:
             logger.info('Selecting procedure %s', procedure_name)
             self.procedure = procedure_name
+            if procedure_name == 'None':
+                return
             for obj, widgets in zip(self.mirrors_padded(), self.mirror_groups):
                 if obj is None:
                     widgets.hide()
@@ -456,6 +460,11 @@ class SkywalkerGui(Display):
         """
         try:
             if self.RE.state == 'idle':
+                # Check for valid procedure
+                if self.procedure == 'None':
+                    logger.info("Please select a procedure.")
+                    return
+
                 # Check for valid goals
                 active_size = len(self.active_system())
                 raw_goals = []
@@ -782,8 +791,9 @@ class SkywalkerGui(Display):
         List of system keys that are part of the active procedure.
         """
         active_system = []
-        for part in self.alignments[self.procedure]:
-            active_system.extend(part)
+        if self.procedure != 'None':
+            for part in self.alignments[self.procedure]:
+                active_system.extend(part)
         return active_system
 
     def mirrors(self):
