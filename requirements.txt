@@ -2,11 +2,8 @@ git+https://github.com/slaclab/lightpath#egg=lightpath
 git+https://github.com/slaclab/pcds-devices#egg=pcds-devices
 git+https://github.com/slaclab/psbeam#egg=psbeam
 git+https://github.com/slaclab/pswalker#egg=pswalker
+git+https://github.com/slaclab/pydm
 simplejson
 lmfit
 numpy
 pandas
-psutil #For PYDM
-pyqtgraph>=0.10.0 #For PYDM
-requests>=1.1.0 #For PYDM
-scipy>=0.12.0 # For PYDM
