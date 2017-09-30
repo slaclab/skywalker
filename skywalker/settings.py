@@ -141,6 +141,7 @@ class SettingsGroup:
         """
         self.settings = {}
         self.window = QDialog(parent=parent)
+        self.window.setWindowTitle('Skywalker Settings')
         main_layout = QVBoxLayout()
         self.window.setLayout(main_layout)
         self.window.setSizePolicy(QSizePolicy.Minimum,
