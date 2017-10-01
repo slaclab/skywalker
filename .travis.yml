@@ -2,6 +2,7 @@ language: python
 sudo: false
 env:
    global:
+     - OFFICIAL_REPO="slaclab/skywalker"
      - secure: "t399QOE83FONpr3PslOu6E28TwJUr6Kywt8JYVae22JCp2l703KYru4Bw3VFOfJSv2A1BISrU5Q6z5xu8BU3qU9V9UtPX7r6iVnK/Jqhxh+jjLA2tglBDUfWLYABC27UgaqDyGs2b9K+q/5c1Fv7jUPiZ+a53ly7Zwg7pu679KvFhbhBhPooSGxkyY+OISNmNr2VF1E34BxzWEaqD0yqjX8DsJEvUjPRwhPxTCQ3h4+BahhXWVZD0+I64/ATvf/4dsjK5LJ9nQLWrgaK9zEklNOw4XHJDthCQ22s2Vx6VlCDmUeHQrGGtqOK2n0atPWr6tOGkRtu2r9RArUt92tcYWt8cUIBFGP18UBRvRBdYkhvqysIUgLA4TmbI/H0uMtHnmvJ3AVjb6oRLlfQWUwneMm+LcawdvVGmVh7Jbo3c7T6KUaL2YWkyUuoao2IshAhbB09OG5QYcIFAsB68COPhVoP9ck88+Z7QjpBGox9epJnBUYedTAyijX7e23XTOgTeSXKxv3tnYdVq8gLyjhcp2E53W3PplRjawAaCuyAgyFR14tniCV0Pc6XehPa2ANCLbuqWLCQZac5KyMQ4ENQMzWoIWD0+wGnaGdHLBDPcT0TZogE9uvdTbLMnhhQVRebXu3gbCDhWAzWTltU2QIyYBsCVGQMXmxDmo3zGHXJnBg="
 
 matrix:
@@ -19,20 +20,18 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+  - conda install conda-build anaconda-client
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-  - conda install -n root conda-build=2.1.10
   #Grab all dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION coverage pip wheel happi ophyd==0.6.1 bluesky==0.9.0 pyqt==4.11.4 pytest opencv=3.1 -c conda-forge -c lightsource2-tag -c skywalker-dev
-  #Install PYDM, must be done this way while PYDM is not a package
-  - git clone https://github.com/slaclab/pydm.git ../pydm
-  - conda develop ../pydm -n test-environment
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION coverage pip wheel pyqt=5 pytest happi pcds-devices lightpath psbeam pswalker -c conda-forge -c lightsource2-tag -c skywalker-dev -c paulscherrerinstitute
   #Launch Conda environment
   - source activate test-environment
   #Install requirements
   - pip install codecov
-  - pip install -r requirements.txt
+  #Install pydm
+  - pip install git+https://github.com/slaclab/pydm
   #Install
   - python setup.py install
 
@@ -57,3 +56,11 @@ script:
 
 after_success:
   - codecov
+  - |
+    if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_REPO_SLUG == $OFFICIAL_REPO && $TRAVIS_BRANCH == $TRAVIS_TAG  && $TRAVIS_TAG != '' && $CONDA_UPLOAD_TOKEN_TAG != '' ]]; then
+      conda build . -c defaults -c conda-forge -c skywalker-dev -c lightsource2-tag -c paulscherrerinstitute --token $CONDA_UPLOAD_TOKEN_TAG --python $TRAVIS_PYTHON_VERSION
+    fi
+  - |
+    if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_REPO_SLUG == $OFFICIAL_REPO && $TRAVIS_BRANCH == 'master' && $TRAVIS_TAG == '' && $CONDA_UPLOAD_TOKEN_DEV != '' ]]; then
+      conda build . -c defaults -c conda-forge -c skywalker-dev -c lightsource2-tag -c paulscherrerinstitute --token $CONDA_UPLOAD_TOKEN_DEV --python $TRAVIS_PYTHON_VERSION
+    fi    

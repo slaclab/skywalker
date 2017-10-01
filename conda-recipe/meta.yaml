@@ -1,0 +1,32 @@
+{% set data = load_setup_py_data() %}
+
+package:
+    name    : skywalker
+    version : {{ data.get('version') }}
+
+source:
+    path: ..
+
+requirements:
+    build:
+       - python {{PY_VER}}*,>=3
+       - setuptools
+
+    run:
+      - python {{PY_VER}}*,>=3
+      - happi
+      - pcds-devices
+      - lightpath
+      - psbeam
+      - pswalker
+      - pyqt >=5
+      - numpy
+
+test:
+    imports:
+      - skywalker
+
+about:
+  home: https://github.com/slaclab/skywalker
+  license: SLAC Open License
+  summary: Automatic alignment module for LCLS mirror systems
