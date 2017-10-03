@@ -736,7 +736,6 @@ class SkywalkerGui(Display):
                 with open(self.nominal_config, 'r') as f:
                     d = json.load(f)
             except:
-                logger.exception('File %s not found!', self.nominal_config)
                 return None
             return d
         return None
@@ -781,10 +780,18 @@ class SkywalkerGui(Display):
         self.save_config(d)
 
     def save_active_mirrors(self):
-        d = self.read_config() or {}
-        for mirror in self.mirrors():
-            d[mirror.name] = mirror.position
-        self.save_config(d)
+        saves = {}
+        averages = 1000
+        all_mirrors = self.mirrors()
+        for mirror in all_mirrors:
+            saves[mirror.name] = 0
+        for i in range(averages):
+            for mirror in all_mirrors:
+                saves[mirror.name] += mirror.position/averages
+        logger.info('Saving positions: %s', saves)
+        read = self.read_config() or {}
+        read.update(saves)
+        self.save_config(read)
 
     def active_system(self):
         """
