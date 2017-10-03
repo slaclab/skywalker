@@ -736,7 +736,6 @@ class SkywalkerGui(Display):
                 with open(self.nominal_config, 'r') as f:
                     d = json.load(f)
             except:
-                logger.exception('File %s not found!', self.nominal_config)
                 return None
             return d
         return None
