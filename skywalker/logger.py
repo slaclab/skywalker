@@ -18,9 +18,11 @@ class GuiHandler(logging.Handler):
     def emit(self, record):
         if self.text_widget is not None:
             try:
-                msg = self.format(record)
-                cursor = self.text_widget.cursorForPosition(QPoint(0, 0))
-                cursor.insertText(msg + self.terminator)
+                all_msg = self.format(record)
+                split_msg = all_msg.split(self.terminator)
+                for msg in reversed(split_msg):
+                    cursor = self.text_widget.cursorForPosition(QPoint(0, 0))
+                    cursor.insertText(msg + self.terminator)
             except Exception:
                 self.handleError(record)
 
