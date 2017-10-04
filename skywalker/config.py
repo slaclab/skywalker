@@ -4,6 +4,7 @@ import happi
 import simplejson
 from happi.backends import JSONBackend
 
+import pcdsdevices
 from pcdsdevices import sim, OffsetMirror
 from pcdsdevices.happireader import construct_device
 from pswalker.examples import patch_pims
@@ -134,34 +135,72 @@ class ConfigReader:
         logger.info("Loading necessary device information from database")
         system_objs  = dict.fromkeys(self.device_types)
         system_objs.update({'rotation' : rotation})
-        for dev_type in self.device_types:
-            #Get information from system names
-            try:
+        #Get information from system names
+        try:
+            for dev_type in self.device_types:
                 #Get device name
                 name = self.live_systems[system][dev_type]
-                #Get device information
-                info = self.client.load_device(name=name)
-                #Load device and store
-                system_objs[dev_type]= construct_device(
-                                        info,
-                                        timeout=timeout,
-                                        info_map=self.info_swap.get(dev_type,
-                                                                    {}))
-            #System JSON failure
-            except KeyError:
-                logger.error("System %s does not have a %s object registered",
-                              system, dev_type)
-            #Happi failure
-            except happi.errors.SearchError:
-                logger.error("Unable to find device %s in the database",
-                             device_name)
-            #Catch-all
-            except Exception:
-                logger.exception('Error loading device %s for %s',
-                                 system, dev_type)
-            #Cache system for quick recall
-            finally:
-                self.cache[system] = system_objs
+                dev  = self.load_device(name)
+                #Report if we did not recieve a device
+                if not dev:
+                    raise ValueError
+                #Store in system obj
+                system_objs[dev_type] = dev
+
+        #System JSON failure
+        except KeyError:
+            logger.error("System %s does not have a %s object registered",
+                          system, dev_type)
+        except ValueError:
+            logger.error("Abandoning configuration load for %s",
+                         system)
+        #Cache system for quick recall
+        else:
+            self.cache[system] = system_objs
 
         return system_objs
 
+    def load_device(self, name):
+        """
+        Load a device by name from happi
+        """
+        dev = None
+        try:
+            #Get device information
+            happi_obj = self.client.load_device(name=name)
+            #Grab proper device class
+            device_cls = getattr(pcdsdevices,
+                                 happi_obj.extraneous['device_class'])
+            #Extra arguments and keywords
+            (_args, _kwargs) = (happi_obj.extraneous.get(key)
+                                for key in ('args', 'kwargs'))
+            dev = construct_device(happi_obj,
+                                   device_class=device_cls,
+                                   **_kwargs)
+        #Happi failure
+        except happi.errors.SearchError:
+            logger.error("Unable to find device %s in the database",
+                         name)
+        #No proper pcds-devices
+        except AttributeError as exc:
+            logger.exception("Unable to find proper object for %s",
+                             exc)
+        #Catch-all
+        except Exception:
+            logger.exception('Error loading device %s', name)
+        return dev
+
+    def load_configuration(self):
+        """
+        Load the entire configuration instantiated as pcdsdevices
+        """
+        #Load devices
+        devices = list()
+        #Iterate through all the devices
+        for name in [dev.name for dev in self.client.all_devices]:
+            #Create a device
+            dev = self.load_device(name)
+            #Add to our list
+            if dev is not None: devices.append(dev)
+        #Return a list of devices
+        return devices
