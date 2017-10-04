@@ -135,7 +135,6 @@ class SkywalkerGui(Display):
             ui.procedure_combo.addItem(align)
 
         # Pick out some initial parameters from system and alignment dicts
-        first_alignment_name = list(self.alignments.keys())[0]
         first_system_key = list(self.alignments.values())[0][0][0]
         first_set = self.system[first_system_key]
         first_imager = first_set['imager']
@@ -166,12 +165,14 @@ class SkywalkerGui(Display):
         mirror_rbvs = self.get_widget_set('mirror_readback')
         mirror_vals = self.get_widget_set('mirror_setpos')
         mirror_circles = self.get_widget_set('mirror_circle')
-        for label, rbv, val, circle, mirror in zip(mirror_labels,
-                                                   mirror_rbvs,
-                                                   mirror_vals,
-                                                   mirror_circles,
-                                                   self.mirrors_padded()):
-            mirror_group = ObjWidgetGroup([rbv, val, circle],
+        mirror_nominals = self.get_widget_set('move_nominal')
+        for label, rbv, val, circle, nom, mirror in zip(mirror_labels,
+                                                        mirror_rbvs,
+                                                        mirror_vals,
+                                                        mirror_circles,
+                                                        mirror_nominals,
+                                                        self.mirrors_padded()):
+            mirror_group = ObjWidgetGroup([rbv, val, circle, nom],
                                           ['pitch.user_readback',
                                            'pitch.user_setpoint',
                                            'pitch.motor_done_move'],
@@ -283,6 +284,10 @@ class SkywalkerGui(Display):
 
         settings_pressed = ui.settings_button.clicked
         settings_pressed.connect(self.on_settings_button)
+
+        for i, nominal_button in enumerate(mirror_nominals):
+            nominal_pressed = nominal_button.clicked
+            nominal_pressed.connect(partial(self.on_move_nominal_button, i))
 
         # Set up automatic camera switching
         self.auto_switch_cam = False
@@ -633,9 +638,12 @@ class SkywalkerGui(Display):
     @pyqtSlot()
     def on_save_mirrors_button(self):
         try:
-            logger.info('Saving mirror positions.')
-            self.save_active_mirrors()
-            self.cache_config()
+            if self.nominal_config is None:
+                logger.info('No config file chosen.')
+            else:
+                logger.info('Saving mirror positions.')
+                self.save_active_mirrors()
+                self.cache_config()
         except:
             logger.exception('Error on saving mirrors')
 
@@ -662,6 +670,25 @@ class SkywalkerGui(Display):
                 logger.info('Changes to settings cancelled.')
         except:
             logger.exception('Error on opening settings')
+
+    @pyqtSlot(int)
+    def on_move_nominal_button(self, index):
+        try:
+            nominal_positions = self.read_config() or {}
+            try:
+                mirror = self.mirrors()[index]
+            except IndexError:
+                logger.exception('Mirror index out of range')
+                return
+            try:
+                pos = nominal_positions[mirror.name]
+            except KeyError:
+                logger.info('No mirror position saved')
+                return
+            logger.info('Moving %s to %s', mirror.name, pos)
+            mirror.move(pos)
+        except Exception:
+            logger.exception('Misc error on move nominal button')
 
     def initialize_RE(self):
         """
