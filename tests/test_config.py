@@ -45,5 +45,6 @@ def test_lightpath_loading():
     cfg = ConfigReader(make_test_path('happi.json'),
                        make_test_path('system.json'))
     #Load devices
-    devs = cfg.load_configuration()
+    devs, containers = cfg.load_configuration()
     assert len(devs) == 3
+    assert len(containers) == 0

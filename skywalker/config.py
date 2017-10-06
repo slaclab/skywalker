@@ -160,13 +160,32 @@ class ConfigReader:
 
         return system_objs
 
-    def load_device(self, name):
+    def load_device(self, name, timeout=1):
         """
         Load a device by name from happi
+
+        The happi file is expected to be configured with a `device_class` that
+        matches the necessary class from `pcdsdevices`, as well as information
+        under `args` and `kwargs` that are used to instantiate the device.
+
+        If the device fails to load for any reason, `None` is returned instead
+
+        Parameters
+        ----------
+        name : str
+            Name of the device
+
+        timeout : float, optional
+            Timeout for EPICS signal connections
+
+        Returns
+        -------
+        `pcdsdevices.Device` or `None`
+
         """
-        dev = None
         try:
             #Get device information
+            logger.debug("Loading %s ...", name)
             happi_obj = self.client.load_device(name=name)
             #Grab proper device class
             device_cls = getattr(pcdsdevices,
@@ -177,6 +196,9 @@ class ConfigReader:
             dev = construct_device(happi_obj,
                                    device_class=device_cls,
                                    **_kwargs)
+            #Instantiate all our signals, even if lazy
+            dev.wait_for_connection(all_signals=True,
+                                    timeout=timeout)
         #Happi failure
         except happi.errors.SearchError:
             logger.error("Unable to find device %s in the database",
@@ -188,19 +210,45 @@ class ConfigReader:
         #Catch-all
         except Exception:
             logger.exception('Error loading device %s', name)
-        return dev
+        #Return a device if no exceptions
+        else:
+            return dev
+        #Do not return anything if we saw an exception
+        return None
 
-    def load_configuration(self):
+    def load_configuration(self, timeout=1):
         """
-        Load the entire configuration instantiated as pcdsdevices
+        Load the entire configuration
+
+        In order to still represent devices in the lightpath that fail to load,
+        if a device fails on intialization the happi container is returned
+        instead.
+
+        Parameters
+        ----------
+        timeout : float, optional
+            Timeout for EPICS signal connections
+
+        Returns
+        -------
+        pcdsdevices: list
+            List of properly instantiated pcdsdevices
+
+        containers : list
+            List of happi containers that failed to load
         """
         #Load devices
         devices = list()
+        containers = list()
         #Iterate through all the devices
-        for name in [dev.name for dev in self.client.all_devices]:
+        for container in self.client.all_devices:
             #Create a device
-            dev = self.load_device(name)
+            dev = self.load_device(container.name,
+                                   timeout=timeout)
             #Add to our list
-            if dev is not None: devices.append(dev)
+            if dev is not None:
+                devices.append(dev)
+            else:
+                containers.append(container)
         #Return a list of devices
-        return devices
+        return devices, containers
