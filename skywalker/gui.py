@@ -17,15 +17,14 @@ from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
                               QObject, QEvent)
 from pydm.PyQt.QtGui import QDoubleValidator, QDialog
 
-from pcdsdevices import sim
 from pcdsdevices.epics.attenuator import FeeAtt
-from pswalker.examples import patch_pims
 from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
 from pswalker.suspenders import (BeamEnergySuspendFloor,
                                  BeamRateSuspendFloor)
 from pswalker.skywalker import skywalker
 
+from skywalker.config import sim_config, sim_alignments
 from skywalker.logger import GuiHandler
 from skywalker.utils import ad_stats_x_axis_rot
 from skywalker.settings import Setting, SettingsGroup
@@ -36,40 +35,10 @@ logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
 
 
-def sim_system():
-    s = sim.source.Undulator('test_undulator')
-    m1 = sim.mirror.OffsetMirror('test_m1h', 'test_m1h_xy',
-                                 z=90.510, alpha=0.0014)
-    m2 = sim.mirror.OffsetMirror('test_m2h', 'test_m2h_xy',
-                                 x=0.0317324, z=101.843, alpha=0.0014)
-    xrtm2 = sim.mirror.OffsetMirror('test_xrtm2', 'test_xrtm2_xy',
-                                    x=0.0317324, z=200, alpha=0.0014)
-    y1 = sim.pim.PIM('test_p3h', x=0.0317324, z=103.660,
-                     zero_outside_yag=True)
-    y2 = sim.pim.PIM('test_dg3', x=0.0317324, z=375.000,
-                     zero_outside_yag=True)
-    mecy1 = sim.pim.PIM('test_mecy1', x=0.0317324, z=350,
-                        zero_outside_yag=True)
-    mfxdg1 = mecy1
-    patch_pims([y1, y2], mirrors=[m1, m2], source=s)
-    patch_pims([mecy1], mirrors=[xrtm2], source=s)
-
-    config = dict(
-        m1h=m1,
-        hx2=y1,
-        hx2_slits=None,
-        m2h=m2,
-        dg3=y2,
-        dg3_slits=None,
-        xrtm2=xrtm2,
-        mfxdg1=mfxdg1,
-        mfxdg1_slits=None,
-    )
-    return config
-
-
 # System mapping of associated devices
-def get_system(config, rotation):
+def get_homs_system():
+    config = homs_system()
+    rotation = 90
     system = dict(
         m1h=dict(mirror=config['m1h'],
                  imager=config['hx2'],
@@ -87,16 +56,17 @@ def get_system(config, rotation):
     return system
 
 
+def get_homs_alignments():
+    return {'HOMS': [['m1h', 'm2h']],
+            'MFX': [['mfx']],
+            'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
+
+
 class SkywalkerGui(Display):
     """
     Display class to define all the logic for the skywalker alignment gui.
     Refers to widgets in the .ui file.
     """
-    # Alignment mapping of which sets to use for each alignment
-    alignments = {'HOMS': [['m1h', 'm2h']],
-                  'MFX': [['mfx']],
-                  'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
-
     def __init__(self, parent=None, args=None):
         super().__init__(parent=parent, args=args)
         ui = self.ui
@@ -338,7 +308,8 @@ class SkywalkerGui(Display):
             if this_arg == '--live':
                 is_live = True
                 self.sim = False
-                self.system = get_system(homs_system(), 90)
+                self.system = get_homs_system()
+                self.alignments = get_homs_alignments()
                 i += 1
             elif this_arg == '--cfg':
                 has_cfg = True
@@ -347,7 +318,8 @@ class SkywalkerGui(Display):
                 logger.debug('Using config file %s', next_arg)
         if not is_live:
             self.sim = True
-            self.system = get_system(sim_system(), 0)
+            self.system = sim_config
+            self.alignments = sim_alignments
         if not has_cfg:
             self.nominal_config = None
 
