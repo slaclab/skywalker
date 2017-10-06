@@ -56,12 +56,6 @@ def get_homs_system():
     return system
 
 
-def get_homs_alignments():
-    return {'HOMS': [['m1h', 'm2h']],
-            'MFX': [['mfx']],
-            'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
-
-
 class SkywalkerGui(Display):
     """
     Display class to define all the logic for the skywalker alignment gui.
@@ -83,6 +77,7 @@ class SkywalkerGui(Display):
 
         # Set self.sim, self.system, self.nominal_config
         self.parse_args(args)
+        self.init_config()
 
         # Convenient remappings of the system
         self.imager_info = {}
@@ -309,19 +304,41 @@ class SkywalkerGui(Display):
                 is_live = True
                 self.sim = False
                 self.system = get_homs_system()
-                self.alignments = get_homs_alignments()
                 i += 1
             elif this_arg == '--cfg':
                 has_cfg = True
-                self.nominal_config = next_arg
+                self.config_folder = next_arg
                 i += 2
-                logger.debug('Using config file %s', next_arg)
+                logger.debug('Using config folder %s', next_arg)
         if not is_live:
             self.sim = True
             self.system = sim_config
-            self.alignments = sim_alignments
         if not has_cfg:
-            self.nominal_config = None
+            self.config_folder = None
+
+    def init_config(self):
+        if self.config_folder is None:
+            this_dir = path.dirname(__file__)
+            config_rel = path.join(this_dir, '..', 'config')
+            self.config_folder = path.abspath(config_rel)
+        self.nominal_config = self.get_cfg_path('nominal')
+        self.alignment_config = self.get_cfg_path('alignments')
+
+        # Load files needed during __init__
+        self.load_alignments()
+
+    def get_cfg_path(self, name):
+        if self.sim:
+            name = 'sim_' + name
+        return path.join(self.config_folder, name + '.json')
+
+    def load_alignments(self):
+        if self.sim:
+            self.alignments = sim_alignments
+        else:
+            with open(self.alignment_config, 'r') as f:
+                d = json.load(f)
+                self.alignments = d
 
     @pyqtSlot()
     def on_post_init(self):
