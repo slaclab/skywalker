@@ -319,28 +319,33 @@ class ImgObjWidget(ObjWidgetGroup):
         except (AttributeError, ValueError):
             pass
         self.rotation = rotation
-        rot_info = ad_stats_x_axis_rot(self.obj, rotation)
-        self.size_x = rot_info['x_size'].value
-        self.size_y = rot_info['y_size'].value
-        self.cent_x = rot_info['x_cent']
-        self.cent_y = rot_info['y_cent']
-        self.mod_x = rot_info['mod_x']
-        self.mod_y = rot_info['mod_y']
         img_widget = self.widgets[0]
-        width_pv = pvnames[0]
-        image_pv = pvnames[1]
-        image_item = img_widget.getImageItem()
-        image_item.setTransformOriginPoint(self.raw_size_x//2,
-                                           self.raw_size_y//2)
-        image_item.setRotation(rotation)
-        view = img_widget.getView()
-        view.setRange(xRange=(0, self.raw_size_x),
-                      yRange=(0, self.raw_size_y),
-                      padding=0.0)
-        view.setLimits(xMin=0, xMax=self.raw_size_x,
-                       yMin=0, yMax=self.raw_size_y)
-        img_widget.setMinimumWidth(self.size_x)
-        img_widget.setMinimumHeight(self.size_y)
+        if self.obj is None:
+            width_pv = None
+            image_pv = None
+        else:
+            rot_info = ad_stats_x_axis_rot(self.obj, rotation)
+            self.size_x = rot_info['x_size'].value
+            self.size_y = rot_info['y_size'].value
+            self.cent_x = rot_info['x_cent']
+            self.cent_y = rot_info['y_cent']
+            self.mod_x = rot_info['mod_x']
+            self.mod_y = rot_info['mod_y']
+            width_pv = pvnames[0]
+            image_pv = pvnames[1]
+            image_item = img_widget.getImageItem()
+            image_item.setTransformOriginPoint(self.raw_size_x//2,
+                                               self.raw_size_y//2)
+            image_item.setRotation(rotation)
+            view = img_widget.getView()
+            view.setRange(xRange=(0, self.raw_size_x),
+                          yRange=(0, self.raw_size_y),
+                          padding=0.0)
+            view.setLimits(xMin=0, xMax=self.raw_size_x,
+                           yMin=0, yMax=self.raw_size_y)
+            img_widget.setMinimumWidth(self.size_x)
+            img_widget.setMinimumHeight(self.size_y)
+
         if width_pv is None:
             width_channel = ''
         else:
@@ -351,8 +356,9 @@ class ImgObjWidget(ObjWidgetGroup):
             image_channel = self.protocol + image_pv
         img_widget.widthChannel = width_channel
         img_widget.imageChannel = image_channel
-        self.cent_x.subscribe(self.update_centroid)
-        self.cent_y.subscribe(self.update_centroid)
+        if self.obj is not None:
+            self.cent_x.subscribe(self.update_centroid)
+            self.cent_y.subscribe(self.update_centroid)
 
         try:
             state_read = self.obj.states.state._read_pv.pvname or ''
@@ -360,16 +366,13 @@ class ImgObjWidget(ObjWidgetGroup):
         except AttributeError:
             state_read = ''
             state_write = ''
+        if state_read:
+            state_read = self.protocol + state_read
+        if state_write:
+            state_write = self.protocol + state_write
 
-        if len(state_read) > 0 and len(state_write) > 0:
-            try:
-                self.state_widget.setChannel(self.protocol + state_read)
-            except:
-                self.state_widget.channel = self.protocol + state_read
-            try:
-                self.state_select_widget.setChannel(self.protocol + state_write)
-            except:
-                self.state_select_widget.channel = self.protocol + state_write
+        self.state_widget.channel = state_read
+        self.state_select_widget.channel = state_write
 
     def update_centroid(self, *args, **kwargs):
         xpos = self.cent_x.value

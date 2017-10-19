@@ -1,5 +1,3 @@
 {
-    "HOMS": [["m1h", "m2h"]],
-    "MFX": [["mfx"]],
-    "HOMS + MFX": [["m1h", "m2h"], ["mfx"]]
+    "HOMS": [["m1h", "m2h"]]
 }

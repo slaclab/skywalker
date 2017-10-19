@@ -92,16 +92,43 @@ class ConfigReader:
         #Load system information
         self.live_systems = simplejson.load(open(system_json, 'r'))
         #Create cache of previously loaded devices
-        self.cache = sim_config
+        self.cache = {}
 
     @property
     def available_systems(self):
         """
         All systems the ConfigReader has available mappings
         """
-        return list(self.live_systems.keys())+list(sim_config.keys())
+        return list(self.live_systems.keys())
 
-    def get_subsystem(self, system, rotation=90, timeout=30, use_cache=True):
+    def get_systems_with(self, key):
+        """
+        Get the systems that include the given device name.
+
+        Parameters
+        ----------
+        key : str
+            Name of a device
+
+        Returns
+        -------
+        systems : list of str
+            A list of systems that include the given device.
+        """
+        try:
+            return self.systems_with_dict[key]
+        except KeyError:
+            return []
+        except AttributeError:
+            d = {}
+            for system, components in self.live_systems.items():
+                for name in components.values():
+                    if isinstance(name, str):
+                        d[name] = d.get(name, []) + [system]
+            self.systems_with_dict = d
+            return self.get_systems_with(key)
+
+    def get_subsystem(self, system, timeout=30, use_cache=True):
         """
         Load the pcdsdevices corresponding to a system name
 
@@ -109,9 +136,6 @@ class ConfigReader:
         ----------
         system : str
             Name of subsystem to load
-
-        rotation : float, optional
-            Rotation to add to subsystem
 
         timeout : float, optional
             Timeout for devices
@@ -135,7 +159,6 @@ class ConfigReader:
         #Create new system
         logger.info("Loading necessary device information from database")
         system_objs  = dict.fromkeys(self.device_types)
-        system_objs.update({'rotation' : rotation})
         #Get information from system names
         try:
             for dev_type in self.device_types:
@@ -147,6 +170,7 @@ class ConfigReader:
                     raise ValueError
                 #Store in system obj
                 system_objs[dev_type] = dev
+            system_objs['rotation'] = self.live_systems[system]['rotation']
 
         #System JSON failure
         except KeyError:
@@ -160,6 +184,9 @@ class ConfigReader:
             self.cache[system] = system_objs
 
         return system_objs
+
+    def __getitem__(self, key):
+        return self.get_subsystem(key)
 
     def load_device(self, name, timeout=1):
         """
@@ -253,3 +280,29 @@ class ConfigReader:
                 containers.append(container)
         #Return a list of devices
         return devices, containers
+
+
+class SimConfigReader(ConfigReader):
+    def __init__(self):
+        self.client = None
+        self.live_systems = {}
+        self._devs = {}
+        for sysname, info in sim_config.items():
+            self.live_systems[sysname] = {}
+            for devstr, device in info.items():
+                try:
+                    name = device.name
+                except:
+                    continue
+                self.live_systems[sysname][devstr] = name
+                self._devs[name] = device
+        self.cache = sim_config
+
+    def get_subsystem(self, system, *args, **kwargs):
+        return self.cache[system]
+
+    def load_device(self, name, *args, **kwargs):
+        return self._devs[name]
+
+    def load_configuration(self):
+        return list(self._devs.values()), []
