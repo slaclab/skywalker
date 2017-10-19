@@ -17,15 +17,13 @@ from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,
                               QObject, QEvent)
 from pydm.PyQt.QtGui import QDoubleValidator, QDialog
 
-from pcdsdevices import sim
 from pcdsdevices.epics.attenuator import FeeAtt
-from pswalker.examples import patch_pims
-from pswalker.config import homs_system
 from pswalker.plan_stubs import slit_scan_fiducialize
 from pswalker.suspenders import (BeamEnergySuspendFloor,
                                  BeamRateSuspendFloor)
 from pswalker.skywalker import skywalker
 
+from skywalker.config import ConfigReader, SimConfigReader, sim_alignments
 from skywalker.logger import GuiHandler
 from skywalker.utils import ad_stats_x_axis_rot
 from skywalker.settings import Setting, SettingsGroup
@@ -36,67 +34,11 @@ logger = logging.getLogger(__name__)
 MAX_MIRRORS = 4
 
 
-def sim_system():
-    s = sim.source.Undulator('test_undulator')
-    m1 = sim.mirror.OffsetMirror('test_m1h', 'test_m1h_xy',
-                                 z=90.510, alpha=0.0014)
-    m2 = sim.mirror.OffsetMirror('test_m2h', 'test_m2h_xy',
-                                 x=0.0317324, z=101.843, alpha=0.0014)
-    xrtm2 = sim.mirror.OffsetMirror('test_xrtm2', 'test_xrtm2_xy',
-                                    x=0.0317324, z=200, alpha=0.0014)
-    y1 = sim.pim.PIM('test_p3h', x=0.0317324, z=103.660,
-                     zero_outside_yag=True)
-    y2 = sim.pim.PIM('test_dg3', x=0.0317324, z=375.000,
-                     zero_outside_yag=True)
-    mecy1 = sim.pim.PIM('test_mecy1', x=0.0317324, z=350,
-                        zero_outside_yag=True)
-    mfxdg1 = mecy1
-    patch_pims([y1, y2], mirrors=[m1, m2], source=s)
-    patch_pims([mecy1], mirrors=[xrtm2], source=s)
-
-    config = dict(
-        m1h=m1,
-        hx2=y1,
-        hx2_slits=None,
-        m2h=m2,
-        dg3=y2,
-        dg3_slits=None,
-        xrtm2=xrtm2,
-        mfxdg1=mfxdg1,
-        mfxdg1_slits=None,
-    )
-    return config
-
-
-# System mapping of associated devices
-def get_system(config, rotation):
-    system = dict(
-        m1h=dict(mirror=config['m1h'],
-                 imager=config['hx2'],
-                 slits=config['hx2_slits'],
-                 rotation=rotation),
-        m2h=dict(mirror=config['m2h'],
-                 imager=config['dg3'],
-                 slits=config['dg3_slits'],
-                 rotation=rotation),
-        mfx=dict(mirror=config['xrtm2'],
-                 imager=config['mfxdg1'],
-                 slits=config['mfxdg1_slits'],
-                 rotation=rotation),
-        )
-    return system
-
-
 class SkywalkerGui(Display):
     """
     Display class to define all the logic for the skywalker alignment gui.
     Refers to widgets in the .ui file.
     """
-    # Alignment mapping of which sets to use for each alignment
-    alignments = {'HOMS': [['m1h', 'm2h']],
-                  'MFX': [['mfx']],
-                  'HOMS + MFX': [['m1h', 'm2h'], ['mfx']]}
-
     def __init__(self, parent=None, args=None):
         super().__init__(parent=parent, args=args)
         ui = self.ui
@@ -111,13 +53,9 @@ class SkywalkerGui(Display):
                             filename='./skywalker_debug.log',
                             filemode='a')
 
-        # Set self.sim, self.system, self.nominal_config
+        # Set self.sim, self.loader, self.nominal_config
         self.parse_args(args)
-
-        # Convenient remappings of the system
-        self.imager_info = {}
-        for info in self.system.values():
-            self.imager_info[info['imager'].name] = info
+        self.init_config()
 
         # Load things
         self.config_cache = {}
@@ -127,8 +65,8 @@ class SkywalkerGui(Display):
         ui.image_title_combo.clear()
         ui.procedure_combo.clear()
         ui.procedure_combo.addItem('None')
-        self.all_imager_names = [entry['imager'].name for
-                                 entry in self.system.values()]
+        self.all_imager_names = [entry['imager'] for entry in
+                                 self.loader.live_systems.values()]
         for imager_name in self.all_imager_names:
             ui.image_title_combo.addItem(imager_name)
         for align in self.alignments.keys():
@@ -136,9 +74,9 @@ class SkywalkerGui(Display):
 
         # Pick out some initial parameters from system and alignment dicts
         first_system_key = list(self.alignments.values())[0][0][0]
-        first_set = self.system[first_system_key]
-        first_imager = first_set['imager']
-        first_slit = first_set['slits']
+        first_set = self.loader[first_system_key]
+        first_imager = first_set.get('imager', None)
+        first_slit = first_set.get('slits', None)
         first_rotation = first_set.get('rotation', 0)
 
         # self.procedure and self.image_obj keep track of the gui state
@@ -289,12 +227,7 @@ class SkywalkerGui(Display):
             nominal_pressed = nominal_button.clicked
             nominal_pressed.connect(partial(self.on_move_nominal_button, i))
 
-        # Set up automatic camera switching
-        self.auto_switch_cam = False
         self.cam_lock = RLock()
-        for comp_set in self.system.values():
-            imager = comp_set['imager']
-            imager.subscribe(self.pick_cam, run=False)
 
         # Store some info about our screen size.
         QApp = QCoreApplication.instance()
@@ -338,18 +271,49 @@ class SkywalkerGui(Display):
             if this_arg == '--live':
                 is_live = True
                 self.sim = False
-                self.system = get_system(homs_system(), 90)
                 i += 1
             elif this_arg == '--cfg':
                 has_cfg = True
-                self.nominal_config = next_arg
+                self.config_folder = next_arg
                 i += 2
-                logger.debug('Using config file %s', next_arg)
+                logger.debug('Using config folder %s', next_arg)
         if not is_live:
             self.sim = True
-            self.system = get_system(sim_system(), 0)
         if not has_cfg:
-            self.nominal_config = None
+            self.config_folder = None
+
+    def init_config(self):
+        if self.config_folder is None:
+            this_dir = path.dirname(__file__)
+            config_rel = path.join(this_dir, '..', 'config')
+            self.config_folder = path.abspath(config_rel)
+        self.nominal_config = self.get_cfg_path('nominal')
+        self.happi_config = self.get_cfg_path('metadata')
+        self.system_config = self.get_cfg_path('system')
+        self.alignment_config = self.get_cfg_path('alignments')
+
+        # Load files needed during __init__
+        self.load_system()
+        self.load_alignments()
+
+    def get_cfg_path(self, name):
+        if self.sim:
+            name = 'sim_' + name
+        return path.join(self.config_folder, name + '.json')
+
+    def load_system(self):
+        if self.sim:
+            self.loader = SimConfigReader()
+        else:
+            self.loader = ConfigReader(self.happi_config, self.system_config)
+
+    def load_alignments(self):
+        if self.sim:
+            self.alignments = sim_alignments
+        else:
+            with open(self.alignment_config, 'r') as f:
+                d = json.load(f)
+                self.alignments = d
 
     @pyqtSlot()
     def on_post_init(self):
@@ -393,12 +357,25 @@ class SkywalkerGui(Display):
         """
         try:
             logger.info('Selecting imager %s', imager_name)
-            info = self.imager_info[imager_name]
-            image_obj = info['imager']
-            slits_obj = info.get('slits')
-            rotation = info.get('rotation', 0)
-            self.image_obj = image_obj
-            self.image_group.change_obj(image_obj, rotation=rotation)
+            systems = self.loader.get_systems_with(imager_name)
+            if len(systems) == 0:
+                logger.error('Invalid imager name.')
+                return
+            # Assume that imagers have exactly one slit and one rotation
+            # Therefore, we can pick an arbitrary system entry that includes
+            # the imager
+            objs = self.loader.get_subsystem(systems[0])
+            # This may have entries or may be missing entries if there was a
+            # problem.
+            try:
+                image_obj = objs['imager']
+                rotation = objs.get('rotation', 0)
+                self.image_obj = image_obj
+                self.image_group.change_obj(image_obj, rotation=rotation)
+            except KeyError:
+                logger.error('Failed to connect to imager')
+            # Slits wasn't a mandatory field.
+            slits_obj = objs.get('slits')
             if slits_obj is not None:
                 self.slit_group.change_obj(slits_obj)
         except:
@@ -484,12 +461,13 @@ class SkywalkerGui(Display):
 
                 logger.info("Starting %s procedure with goals %s",
                             self.procedure, raw_goals)
+                self.install_pick_cam()
                 self.auto_switch_cam = True
                 alignment = self.alignments[self.procedure]
                 for key_set in alignment:
-                    yags = [self.system[key]['imager'] for key in key_set]
-                    mots = [self.system[key]['mirror'] for key in key_set]
-                    rots = [self.system[key].get('rotation')
+                    yags = [self.loader[key]['imager'] for key in key_set]
+                    mots = [self.loader[key]['mirror'] for key in key_set]
+                    rots = [self.loader[key].get('rotation')
                             for key in key_set]
 
                     # Make sure nominal positions are correct
@@ -537,6 +515,7 @@ class SkywalkerGui(Display):
                     self.RE(plan)
             elif self.RE.state == 'paused':
                 logger.info("Resuming procedure.")
+                self.install_pick_cam()
                 self.auto_switch_cam = True
                 self.RE.resume()
         except:
@@ -595,6 +574,7 @@ class SkywalkerGui(Display):
             logger.info('Checking the following slits: %s',
                         [slit.name for slit in slits_to_check])
 
+            self.install_pick_cam()
             self.auto_switch_cam = True
 
             slit_width = self.settings_cache['slit_width']
@@ -735,6 +715,22 @@ class SkywalkerGui(Display):
         """
         pass
 
+    def install_pick_cam(self):
+        """
+        For every camera that we've successfully loaded, subscribe the pick_cam
+        method if we haven't done so already.
+        """
+        try:
+            installed = self.installed
+        except AttributeError:
+            installed = set()
+            self.installed = installed
+        for system in self.loader.cache.values():
+            imager = system['imager']
+            if imager not in installed:
+                imager.subscribe(self.pick_cam, run=False)
+                installed.add(imager)
+
     def pick_cam(self, *args, **kwargs):
         """
         Callback to switch the active imager as the procedures progress.
@@ -834,19 +830,19 @@ class SkywalkerGui(Display):
         """
         List of active mirror objects.
         """
-        return [self.system[act]['mirror'] for act in self.active_system()]
+        return [self.loader[act]['mirror'] for act in self.active_system()]
 
     def imagers(self):
         """
         List of active imager objects.
         """
-        return [self.system[act]['imager'] for act in self.active_system()]
+        return [self.loader[act]['imager'] for act in self.active_system()]
 
     def slits(self):
         """
         List of active slits objects.
         """
-        return [self.system[act].get('slits') for act in self.active_system()]
+        return [self.loader[act].get('slits') for act in self.active_system()]
 
     def goals(self):
         """

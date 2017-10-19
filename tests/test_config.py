@@ -31,8 +31,6 @@ def test_system_loading():
     #Load configuration
     cfg = ConfigReader(make_test_path('happi.json'),
                        make_test_path('system.json'))
-    #Check that all of the simulation systems are loaded
-    assert all([system in cfg.cache for system in sim_config.keys()])
     #Load a subsystem
     system = cfg.get_subsystem('m1h')
     #Check we have all of our device types
