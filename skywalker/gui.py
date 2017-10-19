@@ -639,7 +639,7 @@ class SkywalkerGui(Display):
     @pyqtSlot()
     def on_settings_button(self):
         try:
-            pos = self.settings_button.mapToGlobal(self.settings_button.pos())
+            pos = self.ui.mapToGlobal(self.settings_button.pos())
             dialog_return = self.settings.dialog_at(pos)
             if dialog_return == QDialog.Accepted:
                 self.cache_settings()
