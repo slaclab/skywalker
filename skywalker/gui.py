@@ -31,7 +31,7 @@ from skywalker.widgetgroup import (ObjWidgetGroup, ValueWidgetGroup,
                                    ImgObjWidget)
 
 logger = logging.getLogger(__name__)
-MAX_MIRRORS = 4
+MAX_MIRRORS = 2
 
 
 class SkywalkerGui(Display):
@@ -39,9 +39,19 @@ class SkywalkerGui(Display):
     Display class to define all the logic for the skywalker alignment gui.
     Refers to widgets in the .ui file.
     """
-    def __init__(self, parent=None, args=None):
+    def __init__(self, parent=None, args=None, dark=True):
         super().__init__(parent=parent, args=args)
         ui = self.ui
+
+        #Change the stylesheet
+        if dark:
+            try:
+                import qdarkstyle
+            except ImportError:
+                logger.error("Can not use dark theme, "
+                             "qdarkstyle package not available")
+            else:
+                self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 
         # Configure debug file after all the qt logs
         logging.basicConfig(level=logging.DEBUG,
