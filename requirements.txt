@@ -3,6 +3,7 @@ git+https://github.com/slaclab/pcds-devices#egg=pcds-devices
 git+https://github.com/slaclab/psbeam#egg=psbeam
 git+https://github.com/slaclab/pswalker#egg=pswalker
 git+https://github.com/slaclab/pydm
+git+https://github.com/lcls-pcds/QDarkStyleSheet
 simplejson
 lmfit
 numpy

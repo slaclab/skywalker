@@ -52,8 +52,7 @@ sim_config = {'sim_m1h' : {'mirror'   : m1,
                            'slits'    : None}}
 
 sim_alignments = {'HOMS': [['sim_m1h', 'sim_m2h']],
-                  'MFX': [['sim_mfx']],
-                  'HOMS + MFX': [['sim_m1h', 'sim_m2h'], ['sim_mfx']]}
+                  'MFX': [['sim_mfx']]}
 
 
 class ConfigReader:
