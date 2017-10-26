@@ -603,9 +603,12 @@ class SkywalkerGui(Display):
                     output = modifier - output
                 output_obj[img.name] = output
 
+            self.initialize_RE()
             results = {}
             for img, slit in zip(image_to_check, slits_to_check):
-                rotation = self.imager_info[img.name]['rotation']
+                systems = self.loader.get_systems_with(img.name)
+                objs = self.loader.get_subsystem(systems[0])
+                rotation = objs.get('rotation', 0)
                 this_plan = plan(img, slit, rotation, results)
                 wrapped = run_wrapper(this_plan)
                 wrapped = stage_wrapper(wrapped, [img, slit])
