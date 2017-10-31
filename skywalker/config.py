@@ -270,6 +270,10 @@ class ConfigReader:
         #Iterate through all the devices
         for container in self.client.all_devices:
             #Create a device
+            if not container.active:
+                logger.debug("Ignore inactive device %s", container.name)
+                continue
+
             dev = self.load_device(container.name,
                                    timeout=timeout)
             #Add to our list
