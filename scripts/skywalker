@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+"""
+Launch the Skywalker UI
+"""
+############
+# Standard #
+############
+import sys
+import argparse
+
+###############
+# Third Party #
+###############
+from pydm import PyDMApplication
+
+##########
+# Module #
+##########
+from skywalker.gui import SkywalkerGui
+
+def main(live=False, light=True, cfg=None):
+    #Create PyDM Application
+    app = PyDMApplication()
+    #Create Skywalker Application
+    sky = SkywalkerGui(live=live, dark=not light, cfg=cfg)
+    sky.show()
+    #Launch the application
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    #Configure ArgumentParser
+    parser = argparse.ArgumentParser('Launch Skywalker application')
+    parser.add_argument('--live', action='store_true', default=False,
+                        help='Choice to launch Skywalker with live devices')
+    parser.add_argument('--light', default=False, action='store_true',
+                        help='Choice to not use the default dark stylesheet')
+    parser.add_argument('--cfg', default=None,
+                        help='Directory of configuration information')
+    #Parse given arguments
+    sky_args = parser.parse_args()
+    #Run application
+    main(light=sky_args.light, live=sky_args.live, cfg=sky_args.cfg)

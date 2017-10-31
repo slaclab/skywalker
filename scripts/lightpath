@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+"""
+Launch the Lightpath UI using the configuration file stored in Skywalker
+"""
+############
+# Standard #
+############
+import sys
+import os.path
+import logging
+import argparse
+
+###############
+# Third Party #
+###############
+from pydm  import PyDMApplication
+from skywalker.config import ConfigReader
+from lightpath.ui     import LightApp
+
+##########
+# Module #
+##########
+
+
+
+def main(*args, dark=True, log_level=logging.INFO, hutch=None):
+    #Configure logger
+    logging.basicConfig(level=log_level, format='[%(asctime)s] - %(message)s')
+    #Load the configuration
+    sky_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    meta_json = os.path.join(sky_dir, 'config/metadata.json')
+    sys_json = os.path.join(sky_dir, 'config/system.json')
+    cfg = ConfigReader(meta_json, sys_json)
+    devs, containers = cfg.load_configuration()
+    #Create the LightApp
+    app   = PyDMApplication()
+    light = LightApp(*devs, containers=containers,
+                     beamline=hutch, dark=dark)
+    light.show()
+    #Launch the application
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    #Configure ArgumentParser
+    parser = argparse.ArgumentParser("Launch LCLS Lightpath")
+    parser.add_argument('--dark', help='Choice to use dark stylesheet',
+                        default=True, action='store_true')
+    parser.add_argument('--log_level', help='Configure level of log display',
+                        default=logging.INFO)
+    parser.add_argument('--hutch', default=None,
+                         help='Default hutch for User Interface')
+    #Parse given arguments
+    light_args = parser.parse_args()
+    #Run application
+    main(sys.argv, dark=light_args.dark,
+         log_level=light_args.log_level,
+         hutch=light_args.hutch)
