@@ -8,4 +8,5 @@ setup(name='skywalker',
       author='SLAC National Accelerator Laboratory',
       packages=find_packages(),
       description='Automated beam alignment for LCLS',
+      scripts=['scripts/lightpath', 'scripts/skywalker']
       )

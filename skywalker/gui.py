@@ -38,9 +38,23 @@ class SkywalkerGui(Display):
     """
     Display class to define all the logic for the skywalker alignment gui.
     Refers to widgets in the .ui file.
+
+    Parameters
+    ----------
+    live : bool, optional
+        Whether to launch application with live or simulated devices
+
+    cfg : str, optional
+        Configuration directory to use if not the default
+
+    dark : bool, optional
+        Choice to launch the application with a dark stylesheet
+
+    parent : QWidget
+        Parent Widget of application
     """
-    def __init__(self, parent=None, args=None, dark=True):
-        super().__init__(parent=parent, args=args)
+    def __init__(self, parent=None, live=False, cfg=None,  dark=True):
+        super().__init__(parent=parent)
         ui = self.ui
 
         #Change the stylesheet
@@ -64,7 +78,8 @@ class SkywalkerGui(Display):
                             filemode='a')
 
         # Set self.sim, self.loader, self.nominal_config
-        self.parse_args(args)
+        self.sim = not live
+        self.config_folder = cfg
         self.init_config()
 
         # Load things
@@ -267,30 +282,6 @@ class SkywalkerGui(Display):
             init_str = init_base + 'live mode.'
         logger.info(init_str)
 
-    def parse_args(self, args):
-        logger.debug('Parsing args: %s', args)
-        i = 0
-        is_live = False
-        has_cfg = False
-        while i < len(args):
-            this_arg = args[i]
-            try:
-                next_arg = args[i+1]
-            except IndexError:
-                next_arg = None
-            if this_arg == '--live':
-                is_live = True
-                self.sim = False
-                i += 1
-            elif this_arg == '--cfg':
-                has_cfg = True
-                self.config_folder = next_arg
-                i += 2
-                logger.debug('Using config folder %s', next_arg)
-        if not is_live:
-            self.sim = True
-        if not has_cfg:
-            self.config_folder = None
 
     def init_config(self):
         if self.config_folder is None:

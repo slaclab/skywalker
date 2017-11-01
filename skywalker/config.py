@@ -267,6 +267,7 @@ class ConfigReader:
         #Load devices
         devices = list()
         containers = list()
+        logger.info("Loading LCLS Lightpath devices ...")
         #Iterate through all the devices
         for container in self.client.all_devices:
             #Create a device
