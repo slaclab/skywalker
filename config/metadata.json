@@ -1640,7 +1640,7 @@
         "device_class": "GateValve",
         "embedded_screen": null,
         "kwargs": {},
-        "last_edit": "Sun Nov  5 10:50:31 2017",
+        "last_edit": "Thu Nov  9 09:59:20 2017",
         "macros": null,
         "main_screen": null,
         "name": "XCS PBT Valve 4",
@@ -1649,27 +1649,27 @@
         "stand": null,
         "system": null,
         "type": "Device",
-        "z": 945.96
+        "z": 961.3
     },
-    "XCS:PBT:VGC:05": {
-        "_id": "XCS:PBT:VGC:05",
-        "active": false,
+    "XCS:PBT:YAG": {
+        "_id": "XCS:PBT:YAG",
+        "active": true,
         "args": [],
         "beamline": "PBT",
-        "creation": "Sun Nov  5 10:32:12 2017",
-        "device_class": "GateValve",
+        "creation": "Mon Oct  2 10:57:59 2017",
+        "device_class": "PIMMotor",
         "embedded_screen": null,
         "kwargs": {},
-        "last_edit": "Sun Nov  5 12:34:33 2017",
+        "last_edit": "Thu Nov  9 09:57:03 2017",
         "macros": null,
         "main_screen": null,
-        "name": "XCS PBT Valve 5",
+        "name": "XCS PBT PIM",
         "parent": null,
-        "prefix": "XCS:PBT:VGC:05",
+        "prefix": "XCS:PBT:YAG",
         "stand": null,
         "system": null,
         "type": "Device",
-        "z": 961.3
+        "z": 930.6
     },
     "XCS:REFLASER1:MIRROR": {
         "_id": "XCS:REFLASER1:MIRROR",
