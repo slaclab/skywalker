@@ -166,13 +166,18 @@ class PydmWidgetGroup(BaseWidgetGroup):
     """
     protocol = 'ca://'
 
-    def __init__(self, widgets, pvnames, label=None, name=None, **kwargs):
+    def __init__(self, widgets, pvnames, label=None, name=None, preserve=None,
+                 **kwargs):
         """
         Parameters
         ----------
         pvnames: list
             pvs to assign to the widgets
         """
+        if preserve is None:
+            self._preserve = []
+        else:
+            self._preserve = preserve
         super().__init__(widgets, label=label, name=name,
                          pvnames=pvnames, **kwargs)
 
@@ -197,6 +202,7 @@ class PydmWidgetGroup(BaseWidgetGroup):
         """
         Swap active pv names and manage connections
         """
+        self.preserve_connections()
         self.clear_connections()
         self.setup(pvnames=pvnames, name=name, **kwargs)
         self.create_connections()
@@ -218,6 +224,20 @@ class PydmWidgetGroup(BaseWidgetGroup):
         for widget in self.widgets:
             QApp.establish_widget_connections(widget)
 
+    def preserve_connections(self):
+        """
+        Trick pydm into keeping connections around.
+        """
+        QApp = QCoreApplication.instance()
+        protocol = self.protocol.split('://')[0]
+        plugin = QApp.plugins[protocol]
+        for widget in self._preserve:
+            for channel in widget.channels():
+                address = plugin.get_address(channel)
+                connection = plugin.connections[address]
+                if connection.listener_count < 2:
+                    connection.listener_count += 1
+
 
 class ObjWidgetGroup(PydmWidgetGroup):
     """
@@ -225,7 +245,8 @@ class ObjWidgetGroup(PydmWidgetGroup):
     stripped out and replaced to change context, provided the class is the
     same.
     """
-    def __init__(self, widgets, attrs, obj, label=None, **kwargs):
+    def __init__(self, widgets, attrs, obj, label=None, preserve=None,
+                 **kwargs):
         """
         Parameters
         ----------
@@ -244,7 +265,7 @@ class ObjWidgetGroup(PydmWidgetGroup):
             name = obj.name
         pvnames = self.get_pvnames(obj)
         super().__init__(widgets, pvnames, label=label, name=name,
-                         **kwargs)
+                         preserve=preserve, **kwargs)
 
     def change_obj(self, obj, **kwargs):
         """
@@ -309,7 +330,8 @@ class ImgObjWidget(ObjWidgetGroup):
                  'detector.image2.array_data']
         super().__init__([img_widget, state_widget, state_select_widget],
                          attrs, img_obj, label=label,
-                         rotation=rotation)
+                         rotation=rotation,
+                         preserve=[state_widget, state_select_widget])
 
     def setup(self, *, pvnames, name=None, rotation=0, **kwargs):
         BaseWidgetGroup.setup(self, name=name)
