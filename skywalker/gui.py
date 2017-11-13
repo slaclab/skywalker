@@ -9,7 +9,7 @@ import simplejson as json
 
 from bluesky import RunEngine
 from bluesky.utils import install_qt_kicker
-from bluesky.plans import run_wrapper, stage_wrapper
+from bluesky.preprocessors import run_wrapper, stage_wrapper
 
 from pydm import Display
 from pydm.PyQt.QtCore import (pyqtSlot, pyqtSignal,

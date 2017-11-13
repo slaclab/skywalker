@@ -15,21 +15,22 @@ logger = logging.getLogger(__name__)
 # Simulated Devices #
 #####################
 #Source
-s   = sim.source.Undulator('test_undulator')
+s   = sim.source.Undulator('test_undulator', name='test_undulator')
 
 #Mirrors
-m1  = sim.mirror.OffsetMirror('test_m1h', 'test_m1h_xy',
+m1  = sim.mirror.OffsetMirror('test_m1h', 'test_m1h_xy', name='test_m1h',
                               z=90.510, alpha=0.0014)
-m2  = sim.mirror.OffsetMirror('test_m2h', 'test_m2h_xy',
+m2  = sim.mirror.OffsetMirror('test_m2h', 'test_m2h_xy', name='test_m2h',
                               x=0.0317324, z=101.843, alpha=0.0014)
 xrtm2 = sim.mirror.OffsetMirror('test_xrtm2', 'test_xrtm2_xy',
+                                name='test_xrtm2',
                                 x=0.0317324, z=200, alpha=0.0014)
 #Imagers
-y1     = sim.pim.PIM('test_p3h', x=0.0317324, z=103.660,
+y1     = sim.pim.PIM('test_p3h', x=0.0317324, z=103.660, name='test_p3h',
                      zero_outside_yag=True)
-y2     = sim.pim.PIM('test_dg3', x=0.0317324, z=375.000,
+y2     = sim.pim.PIM('test_dg3', x=0.0317324, z=375.000, name='test_dg3',
                      zero_outside_yag=True)
-mecy1  = sim.pim.PIM('test_mecy1', x=0.0317324, z=350,
+mecy1  = sim.pim.PIM('test_mecy1', x=0.0317324, z=350, name='test_mect1',
                      zero_outside_yag=True)
 mfxdg1 = mecy1
 
