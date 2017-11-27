@@ -752,8 +752,7 @@ class SkywalkerGui(Display):
                 if chosen_imager is not None:
                     name = chosen_imager.name
                     if name != combo.currentText():
-                        # TODO why does this segfault
-                        # logger.info('Automatically switching cam to %s',name)
+                        logger.info('Automatically switching cam to %s',name)
                         index = self.all_imager_names.index(name)
                         combo.setCurrentIndex(index)
 
