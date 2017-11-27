@@ -3,7 +3,7 @@
 import threading
 import logging
 
-from pydm.PyQt.QtCore import QPoint, pyqtSlot, pyqtSignal
+from pydm.PyQt.QtCore import QObject, QPoint, pyqtSlot, pyqtSignal
 
 
 class GuiHandler(logging.Handler):
@@ -13,22 +13,19 @@ class GuiHandler(logging.Handler):
     def __init__(self, text_widget, level=logging.NOTSET):
         super().__init__(level=level)
         self.log_writer = LogWriter(text_widget)
-        self.log_signal = pyqtSignal(str)
-        self.log_signal.connect(self.log_writer.write_log)
         self.lock = threading.RLock()
 
     def emit(self, record):
         with self.lock:
             if self.log_writer is not None:
                 all_msg = self.format(record)
-                self.log_signal.emit(all_msg)
+                self.log_writer.do_write(all_msg)
 
     def close(self):
         with self.lock:
-            self.log_writer.log_close()
-            self.log_signal.disconnect()
-            self.log_signal = None
-            self.log_writer = None
+            if self.log_writer is not None:
+                self.log_writer.log_close()
+                self.log_writer = None
 
 
 class LogWriter(QObject):
@@ -36,10 +33,15 @@ class LogWriter(QObject):
     QObject to do the writing
     """
     terminator = '\n'
+    write_trigger = pyqtSignal(str)
 
     def __init__(self, text_widget):
         super().__init__(parent=text_widget)
         self.text_widget = text_widget
+        self.write_trigger.connect(self.write_log)
+
+    def do_write(self, all_msg):
+        self.write_trigger.emit(all_msg)
 
     @pyqtSlot(str)
     def write_log(self, all_msg):
@@ -51,3 +53,4 @@ class LogWriter(QObject):
 
     def log_close(self):
         self.text_widget = None
+        self.write_trigger.disconnect(self.write_log)
