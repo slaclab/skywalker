@@ -51,8 +51,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1109</width>
-        <height>1002</height>
+        <width>1111</width>
+        <height>1004</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -219,6 +219,9 @@
               </property>
               <property name="whatsThis">
                <string/>
+              </property>
+              <property name="maxRedrawRate" stdset="0">
+               <number>5</number>
               </property>
              </widget>
             </item>
