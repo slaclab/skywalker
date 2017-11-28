@@ -232,11 +232,13 @@ class PydmWidgetGroup(BaseWidgetGroup):
         protocol = self.protocol.split('://')[0]
         plugin = QApp.plugins[protocol]
         for widget in self._preserve:
-            for channel in widget.channels():
-                address = plugin.get_address(channel)
-                connection = plugin.connections[address]
-                if connection.listener_count < 2:
-                    connection.listener_count += 1
+            if hasattr(widget, 'channels'):
+                for channel in widget.channels():
+                    address = plugin.get_address(channel)
+                    if address:
+                        connection = plugin.connections[address]
+                        if connection.listener_count < 2:
+                            connection.listener_count += 1
 
 
 class ObjWidgetGroup(PydmWidgetGroup):
@@ -263,6 +265,8 @@ class ObjWidgetGroup(PydmWidgetGroup):
             name = None
         else:
             name = obj.name
+        if preserve is None:
+            preserve = widgets
         pvnames = self.get_pvnames(obj)
         super().__init__(widgets, pvnames, label=label, name=name,
                          preserve=preserve, **kwargs)
