@@ -143,7 +143,7 @@ class ValueWidgetGroup(BaseWidgetGroup):
         else:
             try:
                 return self.force_type(raw)
-            except:
+            except Exception:
                 return None
 
     @value.setter
@@ -195,7 +195,7 @@ class PydmWidgetGroup(BaseWidgetGroup):
                 chan = self.protocol + pvname
             try:
                 widget.setChannel(chan)
-            except:
+            except Exception:
                 widget.channel = chan
 
     def change_pvs(self, pvnames, name=None, **kwargs):
@@ -356,17 +356,13 @@ class ImgObjWidget(ObjWidgetGroup):
             width_pv = pvnames[0]
             image_pv = pvnames[1]
             image_item = img_widget.getImageItem()
-            image_item.setTransformOriginPoint(self.raw_size_x//2,
-                                               self.raw_size_y//2)
-            image_item.setRotation(rotation)
+            image_item.setTransformOriginPoint(self.size_x/2,
+                                               self.size_y/2)
+            image_item.setRotation((rotation + 90) % 360)
             view = img_widget.getView()
-            view.setRange(xRange=(0, self.raw_size_x),
-                          yRange=(0, self.raw_size_y),
+            view.setRange(xRange=(0, self.size_x),
+                          yRange=(0, self.size_y),
                           padding=0.0)
-            view.setLimits(xMin=0, xMax=self.raw_size_x,
-                           yMin=0, yMax=self.raw_size_y)
-            img_widget.setMinimumWidth(self.size_x)
-            img_widget.setMinimumHeight(self.size_y)
 
         if width_pv is None:
             width_channel = ''
