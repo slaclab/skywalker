@@ -186,7 +186,7 @@ class ConfigReader:
         return system_objs
 
     def __getitem__(self, key):
-        return self.get_subsystem(key)
+        return self.cache.get(key, None)
 
     def load_device(self, name, timeout=1):
         """

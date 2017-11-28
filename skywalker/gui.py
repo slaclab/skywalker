@@ -99,7 +99,7 @@ class SkywalkerGui(Display):
 
         # Pick out some initial parameters from system and alignment dicts
         first_system_key = list(self.alignments.values())[0][0][0]
-        first_set = self.loader[first_system_key]
+        first_set = self.loader.get_subsystem(first_system_key)
         first_imager = first_set.get('imager', None)
         first_slit = first_set.get('slits', None)
         first_rotation = first_set.get('rotation', 0)
@@ -282,7 +282,6 @@ class SkywalkerGui(Display):
             init_str = init_base + 'live mode.'
         logger.info(init_str)
 
-
     def init_config(self):
         if self.config_folder is None:
             this_dir = path.dirname(__file__)
@@ -399,6 +398,8 @@ class SkywalkerGui(Display):
             self.procedure = procedure_name
             if procedure_name == 'None':
                 return
+            else:
+                self.load_active_system()
             for obj, widgets in zip(self.mirrors_padded(), self.mirror_groups):
                 if obj is None:
                     widgets.hide()
@@ -732,7 +733,8 @@ class SkywalkerGui(Display):
         for system in self.loader.cache.values():
             imager = system['imager']
             if imager not in installed:
-                imager.subscribe(self.pick_cam, run=False)
+                imager.subscribe(self.pick_cam, event_type=imager.SUB_STATE,
+                                 run=False)
                 installed.add(imager)
 
     def pick_cam(self, *args, **kwargs):
@@ -743,16 +745,17 @@ class SkywalkerGui(Display):
             with self.cam_lock:
                 chosen_imager = None
                 for img in self.imagers():
-                    if img.position == "Unknown":
+                    pos = img.position
+                    if pos == "Unknown":
                         return
-                    elif img.position == "IN":
+                    elif pos == "IN":
                         chosen_imager = img
                         break
                 combo = self.ui.image_title_combo
                 if chosen_imager is not None:
                     name = chosen_imager.name
                     if name != combo.currentText():
-                        logger.info('Automatically switching cam to %s',name)
+                        logger.info('Automatically switching cam to %s', name)
                         index = self.all_imager_names.index(name)
                         combo.setCurrentIndex(index)
 
@@ -829,23 +832,37 @@ class SkywalkerGui(Display):
                 active_system.extend(part)
         return active_system
 
+    def load_active_system(self):
+        for system in self.active_system():
+            self.loader.get_subsystem(system)
+
+    def _objs(self, key):
+        objs = []
+        for act in self.active_system():
+            subsystem = self.loader[act]
+            if subsystem is None:
+                objs.append(None)
+            else:
+                objs.append(subsystem[key])
+        return objs
+
     def mirrors(self):
         """
         List of active mirror objects.
         """
-        return [self.loader[act]['mirror'] for act in self.active_system()]
+        return self._objs('mirror')
 
     def imagers(self):
         """
         List of active imager objects.
         """
-        return [self.loader[act]['imager'] for act in self.active_system()]
+        return self._objs('imager')
 
     def slits(self):
         """
         List of active slits objects.
         """
-        return [self.loader[act].get('slits') for act in self.active_system()]
+        return self._objs('slits')
 
     def goals(self):
         """
