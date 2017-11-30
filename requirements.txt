@@ -1,8 +1,8 @@
-git+https://github.com/slaclab/lightpath#egg=lightpath
+git+https://github.com/slaclab/lightpath@v0.2.1
 git+https://github.com/slaclab/happi@v0.5.0
-git+https://github.com/slaclab/pcds-devices#egg=pcds-devices
-git+https://github.com/slaclab/psbeam#egg=psbeam
-git+https://github.com/slaclab/pswalker#egg=pswalker
+git+https://github.com/slaclab/pcds-devices@v0.2.0
+git+https://github.com/slaclab/psbeam@v0.0.3
+git+https://github.com/slaclab/pswalker@v0.2.0
 git+https://github.com/slaclab/pydm
 git+https://github.com/lcls-pcds/QDarkStyleSheet
 simplejson
