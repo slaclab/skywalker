@@ -1,2 +1,3 @@
 include versioneer.py
 include skywalker/_version.py
+include skywalker/gui.ui
