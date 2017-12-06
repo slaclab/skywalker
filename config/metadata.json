@@ -79,6 +79,48 @@
         "type": "Device",
         "z": 768.0
     },
+    "CXI:DG1:JAWS": {
+        "_id": "CXI:DG1:JAWS",
+        "active": false,
+        "args": [],
+        "beamline": "CXI",
+        "creation": "Wed Dec  6 14:58:46 2017",
+        "device_class": "Slits",
+        "embedded_screen": null,
+        "kwargs": {},
+        "last_edit": "Wed Dec  6 14:59:56 2017",
+        "macros": null,
+        "main_screen": null,
+        "name": "CXI DG1 Slits",
+        "parent": null,
+        "prefix": "CXI:DG1:JAWS",
+        "stand": "DG1",
+        "system": null,
+        "type": "Device",
+        "z": -1.0
+    },
+    "CXI:DG1:PIM": {
+        "_id": "CXI:DG1:PIM",
+        "active": false,
+        "args": [],
+        "beamline": "CXI",
+        "creation": "Wed Dec  6 15:03:22 2017",
+        "device_class": "PIM",
+        "embedded_screen": null,
+        "kwargs": {
+            "prefix_det": "CXI:DG1:P6740"
+        },
+        "last_edit": "Wed Dec  6 15:03:22 2017",
+        "macros": null,
+        "main_screen": null,
+        "name": "CXI DG1 PIM",
+        "parent": null,
+        "prefix": "CXI:DG1:PIM",
+        "stand": "DG1",
+        "system": null,
+        "type": "Device",
+        "z": -1.0
+    },
     "HFA:SND:VGC:01": {
         "_id": "HFA:SND:VGC:01",
         "active": true,

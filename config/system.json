@@ -12,5 +12,12 @@
         "imager": "XRT DG3M PIM",
         "slits": "XRT DG3M Slits",
         "rotation": 90
+    },
+    "cxi_m2h":
+    {
+        "mirror": "FEE M2H",
+        "imager": "CXI DG1 PIM",
+        "slits": "CXI DG1 Slits",
+        "rotation": 90
     }
 }
